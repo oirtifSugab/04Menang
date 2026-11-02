@@ -166,11 +166,8 @@
             </div>
             
             <div class="flex gap-3">
-                <button onclick="exportData()" class="bg-brand-yellow hover:bg-brand-olive text-brand-green2 hover:text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors text-sm flex items-center">
+                <button onclick="window.exportData()" class="bg-brand-yellow hover:bg-brand-olive text-brand-green2 hover:text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors text-sm flex items-center">
                     <i class="fa-solid fa-file-excel mr-2"></i> Export Excel
-                </button>
-                <button onclick="confirmReset()" class="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors text-sm flex items-center border border-red-200">
-                    <i class="fa-solid fa-trash-can mr-2"></i> Reset
                 </button>
             </div>
         </header>
@@ -326,8 +323,12 @@
             </div>
         </div>
         
-        <footer class="mt-8 text-center text-sm text-gray-500 pb-4">
-            &copy; 2026 Tim Sukses Pemenangan Tika Liyana, M.Kom (04). Data tersimpan aman di peramban Anda.
+        <footer class="mt-8 text-center text-sm text-gray-500 pb-4 flex justify-center items-center gap-3">
+            <span>&copy; 2026 Tim Sukses Pemenangan Tika Liyana, M.Kom (04). Data tersimpan aman di Cloud.</span>
+            <!-- Tombol Reset Disembunyikan -->
+            <button onclick="window.confirmReset()" class="text-gray-300 hover:text-red-500 transition-colors" title="Reset Data">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </button>
         </footer>
     </div>
 
@@ -476,13 +477,23 @@
 
         window.confirmReset = function() {
             window.openModal({
-                type: 'confirm', title: 'Reset Seluruh Data?', message: 'Data akan dihapus permanen dari server.',
+                type: 'confirm', title: 'Reset Data Pemilih?', message: 'Data pemilih akan dihapus dari server. (Foto calon dipertahankan)',
                 onConfirm: () => {
                     const sandi = prompt("Masukkan sandi keamanan:");
                     if (sandi === "04Menang") {
-                        remove(ref(db, '/'));
+                        // 1. Hanya hapus data pemilih (voters)
+                        remove(ref(db, 'voters'));
+                        
+                        // 2. Timpa pengaturan DPT & Background menjadi kosong, 
+                        // TAPI masukkan kembali fotoCalon yang ada di memori saat ini
+                        update(ref(db, 'settings'), {
+                            dptTotal: 0,
+                            bgImage: '',
+                            fotoCalon: appData.fotoCalon || ''
+                        });
+
                         document.getElementById('admin-form').reset();
-                        setTimeout(() => window.openModal({ type: 'success', title: 'Berhasil', message: 'Di-reset.' }), 500);
+                        setTimeout(() => window.openModal({ type: 'success', title: 'Berhasil', message: 'Data pemilih berhasil di-reset.' }), 500);
                     } else if (sandi !== null) {
                         setTimeout(() => window.openModal({ type: 'error', title: 'Ditolak', message: 'Sandi salah!' }), 500);
                     }
