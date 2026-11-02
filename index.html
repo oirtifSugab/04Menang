@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Informasi Pemenangan - TIKA LIYANA, M.Kom (04)</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- SheetJS (Untuk Export ke Excel) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Tailwind Config for Custom Colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            yellow: '#F2C94C',
+                            green1: '#2F6B3F',
+                            green2: '#0B3D2E',
+                            offwhite: '#F7F3E8',
+                            olive: '#8C7A3B'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F7F3E8; /* Fallback brand offwhite */
+            min-height: 100vh;
+        }
+
+        #bg-layer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-color: #F7F3E8;
+            transition: background-image 0.5s ease;
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 25px rgba(11, 61, 46, 0.1);
+        }
+
+        /* Custom Scrollbar for dropdowns/lists if needed */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #2F6B3F; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #0B3D2E; 
+        }
+    </style>
+</head>
+<body class="text-gray-800 antialiased relative">
+
+    <!-- Background Layer -->
+    <div id="bg-layer"></div>
+
+    <!-- Custom Modal (Replacing Alert/Confirm) -->
+    <div id="custom-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform scale-95 transition-transform duration-300 overflow-hidden" id="modal-content">
+            <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 rounded-full mb-4 mx-auto" id="modal-icon-container">
+                    <i id="modal-icon" class="text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-center text-gray-900 mb-2" id="modal-title">Perhatian</h3>
+                <p class="text-center text-gray-600 mb-6" id="modal-message">Pesan disini</p>
+                <div class="flex justify-center gap-3" id="modal-actions">
+                    <!-- Buttons injected via JS -->
+                </div>
+            </div>
+            <div class="h-2 w-full bg-brand-green1" id="modal-accent"></div>
+        </div>
+    </div>
+
+    <!-- ==================== ADMIN VIEW ==================== -->
+    <div id="admin-view" class="min-h-screen flex items-center justify-center p-4 hidden">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-8 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand-yellow via-brand-green1 to-brand-green2"></div>
+            
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-brand-green1 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-3xl shadow-lg border-4 border-brand-yellow">
+                    <i class="fa-solid fa-user-tie"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-brand-green2">Pengaturan Awal</h1>
+                <p class="text-sm text-gray-500 mt-1">Sistem Pemenangan Tika Liyana, M.Kom (04)</p>
+            </div>
+
+            <form id="admin-form" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-brand-green2 mb-1" for="dpt-input">Total Daftar Pemilih Tetap (DPT)</label>
+                    <input type="number" id="dpt-input" required min="1" placeholder="Masukkan total pemilih..." 
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 focus:border-transparent outline-none transition-all">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-brand-green2 mb-1" for="bg-input">Background Aplikasi (Opsional)</label>
+                    <p class="text-xs text-gray-500 mb-2">Unggah foto calon/background kustom (Maks. 2MB)</p>
+                    <input type="file" id="bg-input" accept="image/*" 
+                        class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-brand-offwhite file:text-brand-green1 hover:file:bg-brand-yellow hover:file:text-brand-green2 transition-all cursor-pointer border border-gray-200 rounded-lg p-1">
+                </div>
+
+                <button type="submit" class="w-full bg-brand-green1 hover:bg-brand-green2 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors duration-200 mt-6">
+                    <i class="fa-solid fa-save mr-2"></i> Simpan & Masuk Aplikasi
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN VIEW ==================== -->
+    <div id="main-view" class="hidden min-h-screen p-4 sm:p-8">
+        
+        <!-- Header -->
+        <header class="glass-panel rounded-2xl p-6 mb-8 flex flex-col md:flex-row justify-between items-center border-l-8 border-l-brand-yellow">
+            <div class="flex items-center gap-4 mb-4 md:mb-0">
+                
+                <!-- TAMBAHAN: Tombol Upload Foto Calon -->
+                <label for="upload-foto" id="wadah-foto-calon" class="bg-brand-green2 text-brand-yellow w-16 h-16 rounded-full flex items-center justify-center text-2xl font-black shadow-inner border-2 border-brand-green1 cursor-pointer hover:opacity-80 transition-all bg-cover bg-center overflow-hidden flex-shrink-0 relative group" title="Klik untuk ubah foto calon">
+                    <span id="teks-04" class="absolute z-10">04</span>
+                    <!-- Ikon kamera muncul saat di-hover -->
+                    <div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center z-20">
+                        <i class="fa-solid fa-camera text-white text-lg"></i>
+                    </div>
+                    <input type="file" id="upload-foto" accept="image/*" class="hidden" onchange="handleFotoCalon(event)">
+                </label>
+                <!-- AKHIR TAMBAHAN -->
+
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-brand-green2 tracking-tight">TIKA LIYANA, M.Kom.</h1>
+                    <p class="text-brand-green1 font-medium">Calon Kepala Kampung Nomor Urut 04</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <button onclick="exportData()" class="bg-brand-yellow hover:bg-brand-olive text-brand-green2 hover:text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors text-sm flex items-center">
+                    <i class="fa-solid fa-file-excel mr-2"></i> Export Excel
+                </button>
+                <button onclick="confirmReset()" class="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors text-sm flex items-center border border-red-200">
+                    <i class="fa-solid fa-trash-can mr-2"></i> Reset
+                </button>
+            </div>
+        </header>
+
+        <!-- Tabs Navigation (Navbar) -->
+        <div class="flex flex-wrap gap-2 mb-6 border-b-2 border-gray-200 pb-1">
+            <button onclick="switchTab('tab-input')" id="btn-tab-input" class="px-6 py-3 font-bold rounded-t-xl bg-brand-green1 text-white transition-colors">1. Input Data</button>
+            <button onclick="switchTab('tab-hasil')" id="btn-tab-hasil" class="px-6 py-3 font-bold rounded-t-xl bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors">2. Hasil Perhitungan</button>
+            <button onclick="switchTab('tab-tabel')" id="btn-tab-tabel" class="px-6 py-3 font-bold rounded-t-xl bg-gray-200 text-gray-600 hover:bg-gray-300 transition-colors">3. Data Pemilih</button>
+        </div>
+
+        <!-- TAB 1: Input Form -->
+        <div id="tab-input" class="block max-w-2xl mx-auto w-full">
+            <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-brand-green1">
+                <h2 class="text-xl font-bold text-brand-green2 mb-6 border-b pb-2"><i class="fa-solid fa-user-plus mr-2 text-brand-yellow"></i> Input Data Pemilih</h2>
+                <form id="voter-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1" for="nama">Nama Lengkap</label>
+                        <input type="text" id="nama" required placeholder="Contoh: Ahmad Subagyo" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 focus:border-transparent outline-none transition-all uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1" for="alamat">Alamat (Dusun)</label>
+                        <select id="alamat" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 focus:border-transparent outline-none transition-all bg-white cursor-pointer">
+                            <option value="" disabled selected>Pilih Dusun...</option>
+                            <option value="Dusun 1">Dusun 1</option>
+                            <option value="Dusun 2">Dusun 2</option>
+                            <option value="Dusun 3">Dusun 3</option>
+                            <option value="Dusun 4">Dusun 4</option>
+                            <option value="Dusun 5">Dusun 5</option>
+                            <option value="Dusun 6">Dusun 6</option>
+                            <option value="Dusun 7">Dusun 7</option>
+                            <option value="Dusun 8">Dusun 8</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1" for="jk">Jenis Kelamin</label>
+                        <select id="jk" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 focus:border-transparent outline-none transition-all bg-white cursor-pointer">
+                            <option value="" disabled selected>Pilih Jenis Kelamin...</option>
+                            <option value="Laki-laki">Laki-laki</option>
+                            <option value="Perempuan">Perempuan</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-brand-green2 hover:bg-brand-green1 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors duration-200 mt-4 flex items-center justify-center">
+                        <i class="fa-solid fa-plus-circle mr-2"></i> Tambah Data
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB 2: Dashboard & Stats -->
+        <div id="tab-hasil" class="hidden space-y-8">
+            <!-- Top Stats Row -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="glass-panel rounded-xl p-5 flex items-center border-b-4 border-brand-green1">
+                    <div class="p-3 bg-brand-offwhite rounded-lg text-brand-green1 mr-4"><i class="fa-solid fa-users text-2xl"></i></div>
+                    <div>
+                        <p class="text-sm text-gray-500 font-semibold uppercase">Total Pemilih 04</p>
+                        <p class="text-3xl font-black text-brand-green2" id="stat-total">0</p>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-xl p-5 flex items-center border-b-4 border-blue-500">
+                    <div class="p-3 bg-blue-50 rounded-lg text-blue-500 mr-4"><i class="fa-solid fa-mars text-2xl"></i></div>
+                    <div>
+                        <p class="text-sm text-gray-500 font-semibold uppercase">Laki-laki</p>
+                        <p class="text-3xl font-black text-gray-800" id="stat-male">0</p>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-xl p-5 flex items-center border-b-4 border-pink-500">
+                    <div class="p-3 bg-pink-50 rounded-lg text-pink-500 mr-4"><i class="fa-solid fa-venus text-2xl"></i></div>
+                    <div>
+                        <p class="text-sm text-gray-500 font-semibold uppercase">Perempuan</p>
+                        <p class="text-3xl font-black text-gray-800" id="stat-female">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="glass-panel rounded-xl p-6">
+                <div class="flex justify-between items-end mb-2">
+                    <div>
+                        <h3 class="font-bold text-gray-800">Progres Kemenangan</h3>
+                        <p class="text-sm text-gray-500">Target DPT: <span id="text-dpt" class="font-semibold text-brand-green2">0</span> Suara</p>
+                    </div>
+                    <div class="text-right">
+                        <span id="progress-text" class="text-3xl font-black text-brand-green1">0%</span>
+                    </div>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
+                    <div id="progress-bar" class="bg-gradient-to-r from-brand-yellow to-brand-green1 h-4 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-panel rounded-xl p-6">
+                    <h3 class="font-bold text-gray-800 mb-4 text-center">Sebaran Per Dusun</h3>
+                    <div class="relative h-64 w-full"><canvas id="addressChart"></canvas></div>
+                </div>
+                <div class="glass-panel rounded-xl p-6">
+                    <h3 class="font-bold text-gray-800 mb-4 text-center">Proporsi Jenis Kelamin</h3>
+                    <div class="relative h-64 w-full flex justify-center"><canvas id="genderChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Data Table -->
+        <div id="tab-tabel" class="hidden glass-panel rounded-2xl p-6 border-t-4 border-t-brand-green1">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="font-bold text-lg text-brand-green2"><i class="fa-solid fa-list mr-2"></i> Data Pemilih Terakhir</h3>
+                <span class="text-xs bg-brand-offwhite text-brand-green1 px-3 py-1 rounded-full font-semibold border border-brand-green1">Tersimpan Lokal</span>
+            </div>
+            
+            <!-- Filters -->
+            <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                <select id="filter-alamat" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
+                    <option value="semua">Semua Alamat</option>
+                    <option value="Dusun 1">Dusun 1</option>
+                    <option value="Dusun 2">Dusun 2</option>
+                    <option value="Dusun 3">Dusun 3</option>
+                    <option value="Dusun 4">Dusun 4</option>
+                    <option value="Dusun 5">Dusun 5</option>
+                    <option value="Dusun 6">Dusun 6</option>
+                    <option value="Dusun 7">Dusun 7</option>
+                    <option value="Dusun 8">Dusun 8</option>
+                </select>
+                <select id="filter-jk" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
+                    <option value="semua">Semua Jenis Kelamin</option>
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                </select>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 text-sm border-b">
+                            <th class="p-3 font-semibold w-12 text-center">No</th>
+                            <th class="p-3 font-semibold">Nama Lengkap</th>
+                            <th class="p-3 font-semibold">Alamat</th>
+                            <th class="p-3 font-semibold">Jenis Kelamin</th>
+                            <th class="p-3 font-semibold text-center">Waktu Input</th>
+                            <th class="p-3 font-semibold text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="voter-table-body" class="text-sm">
+                        <!-- Rows injected via JS -->
+                    </tbody>
+                </table>
+                <div id="empty-state" class="text-center py-8 text-gray-500 hidden">
+                    <i class="fa-regular fa-folder-open text-4xl mb-3 text-gray-300"></i>
+                    <p>Belum ada data pemilih yang diinput.</p>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="mt-8 text-center text-sm text-gray-500 pb-4">
+            &copy; 2026 Tim Sukses Pemenangan Tika Liyana, M.Kom (04). Data tersimpan aman di peramban Anda.
+        </footer>
+    </div>
+
+    <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+    <script type="module">
+        // 1. Import SDK Inti dan Database
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
+        import { getDatabase, ref, onValue, push, update, remove } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
+
+        // 2. Konfigurasi Firebase Anda
+        const firebaseConfig = {
+            apiKey: "AIzaSyC61C_WZjL6TRLGZ0o5ssRU0YwaEl4rIHg",
+            authDomain: "menang-f11af.firebaseapp.com",
+            databaseURL: "https://menang-f11af-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "menang-f11af",
+            storageBucket: "menang-f11af.firebasestorage.app",
+            messagingSenderId: "210917784585",
+            appId: "1:210917784585:web:026f352c6d55948922ccd8"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        // --- State Management ---
+        let appData = { dptTotal: 0, bgImage: '', fotoCalon: '', voters: [] };
+        let addressChartInstance = null;
+        let genderChartInstance = null;
+
+        const bgLayer = document.getElementById('bg-layer');
+        const adminForm = document.getElementById('admin-form');
+        const voterForm = document.getElementById('voter-form');
+        
+        // --- Listener Realtime Data ---
+        const dbRef = ref(db, '/');
+        onValue(dbRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                appData.dptTotal = data.settings?.dptTotal || 0;
+                appData.bgImage = data.settings?.bgImage || '';
+                appData.fotoCalon = data.settings?.fotoCalon || '';
+
+                const votersObj = data.voters || {};
+                appData.voters = Object.keys(votersObj).map(key => ({
+                    id: key,
+                    ...votersObj[key]
+                })).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            } else {
+                appData = { dptTotal: 0, bgImage: '', fotoCalon: '', voters: [] };
+            }
+
+            // Update UI
+            window.terapkanFotoCalon();
+            bgLayer.style.backgroundImage = appData.bgImage ? `url(${appData.bgImage})` : 'none';
+            
+            if (appData.dptTotal > 0) { 
+                document.getElementById('admin-view').classList.add('hidden');
+                document.getElementById('main-view').classList.remove('hidden');
+                document.getElementById('text-dpt').innerText = appData.dptTotal.toLocaleString('id-ID');
+            } else { 
+                document.getElementById('admin-view').classList.remove('hidden');
+                document.getElementById('main-view').classList.add('hidden');
+            }
+            
+            window.updateDashboard();
+            window.renderTable(); 
+        });
+
+        // --- Admin Form ---
+        adminForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const dptInput = document.getElementById('dpt-input').value;
+            const bgInput = document.getElementById('bg-input').files[0];
+
+            if (bgInput) {
+                if(bgInput.size > 2 * 1024 * 1024) {
+                    window.openModal({ type: 'error', title: 'Terlalu Besar', message: 'Maksimal 2MB.'});
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    update(ref(db, 'settings'), { 
+                        dptTotal: parseInt(dptInput),
+                        bgImage: event.target.result
+                    });
+                };
+                reader.readAsDataURL(bgInput);
+            } else {
+                update(ref(db, 'settings'), { dptTotal: parseInt(dptInput) });
+            }
+        });
+
+        // --- Voter Form ---
+        voterForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            let nama = document.getElementById('nama').value.trim();
+            const alamat = document.getElementById('alamat').value;
+            const jk = document.getElementById('jk').value;
+            const normalizedName = nama.toLowerCase().replace(/\s+/g, ' ');
+
+            const isDuplicate = appData.voters.some(v => v.name.toLowerCase().replace(/\s+/g, ' ') === normalizedName);
+            if (isDuplicate) {
+                window.openModal({ type: 'error', title: 'Data Ganda!', message: `Nama "${nama}" sudah terdaftar.` });
+                return;
+            }
+
+            const newVoter = { name: nama, address: alamat, gender: jk, timestamp: new Date().toISOString() };
+            push(ref(db, 'voters'), newVoter);
+
+            voterForm.reset();
+            document.getElementById('nama').focus();
+        });
+
+        // --- Fungsi Global (Terhubung dengan HTML) ---
+        window.handleFotoCalon = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            if(file.size > 2 * 1024 * 1024) {
+                window.openModal({ type: 'error', title: 'Terlalu Besar', message: 'Maksimal 2MB.'});
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                update(ref(db, 'settings'), { fotoCalon: e.target.result });
+            };
+            reader.readAsDataURL(file);
+        };
+
+        window.terapkanFotoCalon = function() {
+            const wadah = document.getElementById('wadah-foto-calon');
+            const teks = document.getElementById('teks-04');
+            if (appData.fotoCalon) {
+                wadah.style.backgroundImage = `url(${appData.fotoCalon})`;
+                teks.classList.add('hidden');
+            } else {
+                wadah.style.backgroundImage = 'none';
+                teks.classList.remove('hidden');
+            }
+        };
+
+        window.deleteVoter = function(id) {
+            window.openModal({
+                type: 'confirm', title: 'Hapus Data?', message: 'Yakin hapus data ini?',
+                onConfirm: () => remove(ref(db, 'voters/' + id))
+            });
+        };
+
+        window.confirmReset = function() {
+            window.openModal({
+                type: 'confirm', title: 'Reset Seluruh Data?', message: 'Data akan dihapus permanen dari server.',
+                onConfirm: () => {
+                    const sandi = prompt("Masukkan sandi keamanan:");
+                    if (sandi === "04Menang") {
+                        remove(ref(db, '/'));
+                        document.getElementById('admin-form').reset();
+                        setTimeout(() => window.openModal({ type: 'success', title: 'Berhasil', message: 'Di-reset.' }), 500);
+                    } else if (sandi !== null) {
+                        setTimeout(() => window.openModal({ type: 'error', title: 'Ditolak', message: 'Sandi salah!' }), 500);
+                    }
+                }
+            });
+        };
+
+        window.switchTab = function(targetTab) {
+            document.getElementById('tab-input').classList.add('hidden');
+            document.getElementById('tab-hasil').classList.add('hidden');
+            document.getElementById('tab-tabel').classList.add('hidden');
+            
+            const defaultBtnClass = "px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300";
+            document.getElementById('btn-tab-input').className = defaultBtnClass;
+            document.getElementById('btn-tab-hasil').className = defaultBtnClass;
+            document.getElementById('btn-tab-tabel').className = defaultBtnClass;
+
+            document.getElementById(targetTab).classList.remove('hidden');
+            const activeBtnClass = "px-6 py-3 font-bold rounded-t-xl transition-colors bg-brand-green1 text-white";
+            document.getElementById(`btn-${targetTab}`).className = activeBtnClass;
+        };
+
+        window.exportData = function() {
+            if(appData.voters.length === 0) {
+                window.openModal({type: 'info', title: 'Kosong', message: 'Tidak ada data.'});
+                return;
+            }
+            const dataUntukExcel = appData.voters.map(voter => {
+                const dateObj = new Date(voter.timestamp);
+                const waktuFormat = dateObj.toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) + ' ' + 
+                                    dateObj.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+                return {
+                    "Nama Lengkap": voter.name.toUpperCase(),
+                    "Alamat": voter.address,
+                    "Jenis Kelamin": voter.gender,
+                    "Waktu Input": waktuFormat
+                };
+            });
+            const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Data Pemilih");
+            XLSX.writeFile(workbook, "Data_Pemilih_04_Tika_Liyana.xlsx");
+        };
+
+        window.openModal = function(options) {
+            const modal = document.getElementById('custom-modal');
+            const { type = 'info', title, message, onConfirm = null } = options;
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            
+            const actions = document.getElementById('modal-actions');
+            actions.innerHTML = '';
+            
+            if (type === 'confirm') {
+                const btnCancel = document.createElement('button');
+                btnCancel.className = 'px-6 py-2 bg-gray-200 text-gray-800 rounded-lg';
+                btnCancel.innerText = 'Batal';
+                btnCancel.onclick = window.closeModal;
+                
+                const btnConfirm = document.createElement('button');
+                btnConfirm.className = 'px-6 py-2 bg-red-600 text-white rounded-lg';
+                btnConfirm.innerText = 'Ya, Lanjutkan';
+                btnConfirm.onclick = () => { window.closeModal(); if(onConfirm) onConfirm(); };
+                
+                actions.appendChild(btnCancel);
+                actions.appendChild(btnConfirm);
+            } else {
+                const btn = document.createElement('button');
+                btn.className = 'px-6 py-2 bg-brand-green1 text-white rounded-lg';
+                btn.innerText = 'OK';
+                btn.onclick = window.closeModal;
+                actions.appendChild(btn);
+            }
+
+            modal.classList.remove('hidden', 'opacity-0');
+        };
+
+        window.closeModal = function() {
+            const modal = document.getElementById('custom-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        };
+
+        window.updateDashboard = function() {
+            const total = appData.voters.length;
+            const males = appData.voters.filter(v => v.gender === 'Laki-laki').length;
+            const females = appData.voters.filter(v => v.gender === 'Perempuan').length;
+
+            document.getElementById('stat-total').innerText = total.toLocaleString('id-ID');
+            document.getElementById('stat-male').innerText = males.toLocaleString('id-ID');
+            document.getElementById('stat-female').innerText = females.toLocaleString('id-ID');
+
+            const percentage = appData.dptTotal > 0 ? ((total / appData.dptTotal) * 100).toFixed(1) : 0;
+            document.getElementById('progress-text').innerText = `${percentage}%`;
+            document.getElementById('progress-bar').style.width = `${Math.min(percentage, 100)}%`;
+
+            // Chart Logika
+            const dusunLabels = ['Dusun 1', 'Dusun 2', 'Dusun 3', 'Dusun 4', 'Dusun 5', 'Dusun 6', 'Dusun 7', 'Dusun 8'];
+            const addressCounts = new Array(8).fill(0);
+            
+            appData.voters.forEach(v => {
+                const index = dusunLabels.indexOf(v.address);
+                if (index !== -1) addressCounts[index]++;
+            });
+
+            const ctxAddress = document.getElementById('addressChart').getContext('2d');
+            if (addressChartInstance) {
+                addressChartInstance.data.datasets[0].data = addressCounts;
+                addressChartInstance.update();
+            } else {
+                addressChartInstance = new Chart(ctxAddress, {
+                    type: 'bar',
+                    data: {
+                        labels: dusunLabels,
+                        datasets: [{
+                            label: 'Jumlah Pemilih',
+                            data: addressCounts,
+                            backgroundColor: '#2F6B3F',
+                            borderColor: '#0B3D2E',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                });
+            }
+
+            const ctxGender = document.getElementById('genderChart').getContext('2d');
+            if (genderChartInstance) {
+                genderChartInstance.data.datasets[0].data = [males, females];
+                genderChartInstance.update();
+            } else {
+                genderChartInstance = new Chart(ctxGender, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Laki-laki', 'Perempuan'],
+                        datasets: [{
+                            data: [males, females],
+                            backgroundColor: ['#3B82F6', '#EC4899'],
+                            borderWidth: 0,
+                            hoverOffset: 4
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+            }
+        };
+
+        window.renderTable = function() {
+            const tableBody = document.getElementById('voter-table-body');
+            const emptyState = document.getElementById('empty-state');
+            tableBody.innerHTML = '';
+            
+            const elAlamat = document.getElementById('filter-alamat');
+            const elJk = document.getElementById('filter-jk');
+            const valAlamat = elAlamat ? elAlamat.value : 'semua';
+            const valJk = elJk ? elJk.value : 'semua';
+
+            const filteredVoters = appData.voters.filter(voter => {
+                const matchAlamat = (valAlamat === 'semua') || (voter.address === valAlamat);
+                const matchJk = (valJk === 'semua') || (voter.gender === valJk);
+                return matchAlamat && matchJk;
+            });
+            
+            if (filteredVoters.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+            
+            filteredVoters.forEach((voter, index) => {
+                const dateObj = new Date(voter.timestamp);
+                const timeStr = dateObj.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
+                const dateStr = dateObj.toLocaleDateString('id-ID', {day: 'numeric', month: 'short'});
+                
+                const tr = document.createElement('tr');
+                tr.className = "border-b hover:bg-brand-offwhite/50 transition-colors";
+                tr.innerHTML = `
+                    <td class="p-3 text-center text-gray-500">${index + 1}</td>
+                    <td class="p-3 font-semibold uppercase">${voter.name}</td>
+                    <td class="p-3"><span class="bg-gray-100 px-2 py-1 rounded text-xs border">${voter.address}</span></td>
+                    <td class="p-3">${voter.gender === 'Laki-laki' ? '<span class="text-blue-600"><i class="fa-solid fa-mars mr-1"></i> Laki-laki</span>' : '<span class="text-pink-600"><i class="fa-solid fa-venus mr-1"></i> Perempuan</span>'}</td>
+                    <td class="p-3 text-center text-xs text-gray-500">${dateStr} ${timeStr}</td>
+                    <td class="p-3 text-center"><button onclick="window.deleteVoter('${voter.id}')" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded transition-colors"><i class="fa-solid fa-trash"></i></button></td>
+                `;
+                tableBody.appendChild(tr);
+            });
+        };
+    </script>
+</body>
+</html>
