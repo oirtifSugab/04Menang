@@ -64,38 +64,37 @@ window.logoutAdmin = function() {
 
 function checkRouter() {
     const role = sessionStorage.getItem('sessionRole');
-    
     if (!role) {
         loginView.classList.remove('hidden');
-        adminView.classList.add('hidden');
         mainView.classList.add('hidden');
         return;
     }
 
     loginView.classList.add('hidden');
+    mainView.classList.remove('hidden');
     
-    // Routing Dashboard setup DPT
-    if (appData.dptTotal > 0) { 
-        adminView.classList.add('hidden');
-        mainView.classList.remove('hidden');
-        document.getElementById('text-dpt').innerText = appData.dptTotal.toLocaleString('id-ID');
+    // Update text DPT di progress bar (seperti di gambar)
+    document.getElementById('text-dpt').innerText = (appData.dptTotal || 0).toLocaleString('id-ID');
+    
+    // Atur visibilitas tab berdasarkan Role
+    document.getElementById('btn-tab-hasil').classList.remove('hidden');
+    document.getElementById('btn-tab-tabel').classList.remove('hidden');
+    
+    if (role === 'admin') {
+        document.getElementById('btn-tab-akun').classList.remove('hidden');
+        document.getElementById('btn-tab-pengaturan').classList.remove('hidden');
+        document.getElementById('btn-tab-input').classList.add('hidden');
+        window.switchTab('tab-akun'); // Default admin ke kelola akun
         
-        // Atur Tab Berdasarkan Role
-        document.getElementById('btn-tab-hasil').classList.remove('hidden');
-        document.getElementById('btn-tab-tabel').classList.remove('hidden');
-        
-        if (role === 'admin') {
-            document.getElementById('btn-tab-akun').classList.remove('hidden');
-            document.getElementById('btn-tab-input').classList.add('hidden');
-            window.switchTab('tab-akun'); // Tab default Admin
-        } else {
-            document.getElementById('btn-tab-akun').classList.add('hidden');
-            document.getElementById('btn-tab-input').classList.remove('hidden');
-            window.switchTab('tab-input'); // Tab default User
+        // Isi nilai form DPT saat ini
+        if(document.getElementById('edit-dpt-input')) {
+            document.getElementById('edit-dpt-input').value = appData.dptTotal || '';
         }
-    } else { 
-        adminView.classList.remove('hidden');
-        mainView.classList.add('hidden');
+    } else {
+        document.getElementById('btn-tab-akun').classList.add('hidden');
+        document.getElementById('btn-tab-pengaturan').classList.add('hidden');
+        document.getElementById('btn-tab-input').classList.remove('hidden');
+        window.switchTab('tab-input'); // Default user ke input data
     }
 }
 
@@ -134,29 +133,33 @@ onValue(dbRef, (snapshot) => {
     window.renderUsers(); 
 });
 
-// --- Admin Form ---
-adminForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const dptInput = document.getElementById('dpt-input').value;
-    const bgInput = document.getElementById('bg-input').files[0];
+// --- Pengaturan Aplikasi (Admin) ---
+const pengaturanForm = document.getElementById('pengaturan-form');
+if (pengaturanForm) {
+    pengaturanForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const dptInput = document.getElementById('edit-dpt-input').value;
+        const bgInput = document.getElementById('edit-bg-input').files[0];
 
-    if (bgInput) {
-        if(bgInput.size > 2 * 1024 * 1024) {
-            window.openModal({ type: 'error', title: 'Terlalu Besar', message: 'Maksimal 2MB.'});
-            return;
+        if (bgInput) {
+            if(bgInput.size > 2 * 1024 * 1024) {
+                window.openModal({ type: 'error', title: 'Terlalu Besar', message: 'Maksimal 2MB.'});
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                update(ref(db, 'settings'), { 
+                    dptTotal: parseInt(dptInput),
+                    bgImage: event.target.result
+                }).then(() => window.openModal({ type: 'success', title: 'Berhasil', message: 'Pengaturan dan DPT diperbarui.' }));
+            };
+            reader.readAsDataURL(bgInput);
+        } else {
+            update(ref(db, 'settings'), { dptTotal: parseInt(dptInput) })
+                .then(() => window.openModal({ type: 'success', title: 'Berhasil', message: 'Target DPT diperbarui.' }));
         }
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            update(ref(db, 'settings'), { 
-                dptTotal: parseInt(dptInput),
-                bgImage: event.target.result
-            });
-        };
-        reader.readAsDataURL(bgInput);
-    } else {
-        update(ref(db, 'settings'), { dptTotal: parseInt(dptInput) });
-    }
-});
+    });
+}
 
 // --- Voter Form ---
 voterForm.addEventListener('submit', function(e) {
@@ -299,20 +302,21 @@ window.confirmReset = function() {
 window.switchTab = function(targetTab) {
     const role = sessionStorage.getItem('sessionRole');
     
-    // 1. Keamanan Ekstra: Blokir paksa jika Relawan/User mencoba akses tab Kelola Akun
-    if (targetTab === 'tab-akun' && role !== 'admin') {
+    // 1. Keamanan Ekstra: Blokir Relawan/User dari Kelola Akun & Pengaturan
+    if ((targetTab === 'tab-akun' || targetTab === 'tab-pengaturan') && role !== 'admin') {
         console.warn("Akses ditolak: Hanya Admin.");
         return;
     }
 
     // 2. Sembunyikan semua konten tab
     document.getElementById('tab-akun').classList.add('hidden');
+    if(document.getElementById('tab-pengaturan')) document.getElementById('tab-pengaturan').classList.add('hidden');
     document.getElementById('tab-input').classList.add('hidden');
     document.getElementById('tab-hasil').classList.add('hidden');
     document.getElementById('tab-tabel').classList.add('hidden');
     
     // 3. Reset warna tombol ke default TANPA menghapus class 'hidden'
-    const buttons = ['btn-tab-akun', 'btn-tab-input', 'btn-tab-hasil', 'btn-tab-tabel'];
+    const buttons = ['btn-tab-akun', 'btn-tab-pengaturan', 'btn-tab-input', 'btn-tab-hasil', 'btn-tab-tabel'];
     buttons.forEach(btnId => {
         const btn = document.getElementById(btnId);
         if(btn) {
