@@ -43,6 +43,15 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
         return;
     } 
 
+    // Cek Akun Pemantau (Read-only)
+    if (u === "relawan04" && p === "relawan04") {
+        sessionStorage.setItem('sessionRole', 'viewer');
+        sessionStorage.setItem('sessionName', 'Tim Pemantau');
+        window.openModal({ type: 'success', title: 'Berhasil', message: 'Selamat datang, Tim Pemantau!' });
+        setTimeout(() => { window.closeModal(); checkRouter(); }, 1000);
+        return;
+    }
+
     // Cek Relawan (User) di Database
     const userFound = appData.users.find(user => user.username === u && user.password === p);
     if (userFound) {
@@ -81,30 +90,40 @@ function checkRouter() {
     document.getElementById('btn-tab-hasil').classList.remove('hidden');
     document.getElementById('btn-tab-tabel').classList.remove('hidden');
     
+    const thAksi = document.getElementById('th-aksi');
+
     if (role === 'admin') {
         document.getElementById('btn-tab-akun').classList.remove('hidden');
         document.getElementById('btn-tab-pengaturan').classList.remove('hidden');
         document.getElementById('btn-tab-input').classList.add('hidden');
+        if (thAksi) thAksi.classList.remove('hidden'); // Munculkan kolom Aksi
         
-        // HANYA pindah tab secara otomatis jika belum ada tab yang terbuka (saat baru login/refresh)
-        if (!currentActiveTab) {
-            window.switchTab('tab-akun');
-        }
+        if (!currentActiveTab) window.switchTab('tab-akun');
         
-        // Isi nilai form DPT saat ini (jangan timpa teks jika admin sedang mengetik di kolom tersebut)
         const dptInputEl = document.getElementById('edit-dpt-input');
-        if (dptInputEl && document.activeElement !== dptInputEl) {
-            dptInputEl.value = appData.dptTotal || '';
-        }
+        if (dptInputEl && document.activeElement !== dptInputEl) dptInputEl.value = appData.dptTotal || '';
+        const lkInputEl = document.getElementById('edit-target-lk');
+        if (lkInputEl && document.activeElement !== lkInputEl) lkInputEl.value = appData.targetLk || '';
+        const prInputEl = document.getElementById('edit-target-pr');
+        if (prInputEl && document.activeElement !== prInputEl) prInputEl.value = appData.targetPr || '';
+        
+    } else if (role === 'viewer') {
+        // PENGATURAN KHUSUS PEMANTAU (Read-Only)
+        document.getElementById('btn-tab-akun').classList.add('hidden');
+        document.getElementById('btn-tab-pengaturan').classList.add('hidden');
+        document.getElementById('btn-tab-input').classList.add('hidden'); // Sembunyikan Input
+        if (thAksi) thAksi.classList.add('hidden'); // Sembunyikan kolom Aksi
+        
+        if (!currentActiveTab) window.switchTab('tab-hasil'); // Default pemantau ke Dasbor Hasil
+        
     } else {
+        // PENGATURAN RELAWAN (User biasa)
         document.getElementById('btn-tab-akun').classList.add('hidden');
         document.getElementById('btn-tab-pengaturan').classList.add('hidden');
         document.getElementById('btn-tab-input').classList.remove('hidden');
+        if (thAksi) thAksi.classList.remove('hidden'); // Munculkan kolom Aksi
         
-        // HANYA pindah tab secara otomatis jika belum ada tab yang terbuka
-        if (!currentActiveTab) {
-            window.switchTab('tab-input');
-        }
+        if (!currentActiveTab) window.switchTab('tab-input');
     }
 }
 
@@ -400,9 +419,14 @@ window.confirmReset = function() {
 window.switchTab = function(targetTab) {
     const role = sessionStorage.getItem('sessionRole');
     
-    // 1. Keamanan Ekstra: Blokir Relawan/User dari Kelola Akun & Pengaturan
+    // 1. Keamanan Ekstra
     if ((targetTab === 'tab-akun' || targetTab === 'tab-pengaturan') && role !== 'admin') {
         console.warn("Akses ditolak: Hanya Admin.");
+        return;
+    }
+    // Pemantau dilarang masuk ke tab Input
+    if (targetTab === 'tab-input' && role === 'viewer') {
+        console.warn("Akses ditolak: Pemantau tidak dapat menginput data.");
         return;
     }
 
@@ -671,14 +695,13 @@ window.renderTable = function() {
         const timeStr = dateObj.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
         const dateStr = dateObj.toLocaleDateString('id-ID', {day: 'numeric', month: 'short'});
         
-        const tr = document.createElement('tr');
-        tr.className = "border-b hover:bg-brand-offwhite/50 transition-colors";
-        tr.innerHTML = `
-            <td class="p-3 text-center text-gray-500">${index + 1}</td>
-            <td class="p-3 font-semibold uppercase">${voter.name}</td>
-            <td class="p-3"><span class="bg-gray-100 px-2 py-1 rounded text-xs border">${voter.address}</span></td>
-            <td class="p-3">${voter.gender === 'Laki-laki' ? '<span class="text-blue-600"><i class="fa-solid fa-mars mr-1"></i> Laki-laki</span>' : '<span class="text-pink-600"><i class="fa-solid fa-venus mr-1"></i> Perempuan</span>'}</td>
-            <td class="p-3 text-center text-xs text-gray-500">${dateStr} ${timeStr}</td>
+        // Ambil role pengguna saat ini
+        const role = sessionStorage.getItem('sessionRole');
+        
+        // Render sel kolom aksi KECUALI untuk role viewer
+        let actionColumnHTML = '';
+        if (role !== 'viewer') {
+            actionColumnHTML = `
             <td class="p-3 text-center">
                 <div class="flex items-center justify-center gap-2">
                     <button onclick="window.editVoter('${voter.id}')" class="text-blue-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors" title="Edit Data">
@@ -688,7 +711,18 @@ window.renderTable = function() {
                         <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>
-            </td>
+            </td>`;
+        }
+
+        const tr = document.createElement('tr');
+        tr.className = "border-b hover:bg-brand-offwhite/50 transition-colors";
+        tr.innerHTML = `
+            <td class="p-3 text-center text-gray-500">${index + 1}</td>
+            <td class="p-3 font-semibold uppercase">${voter.name}</td>
+            <td class="p-3"><span class="bg-gray-100 px-2 py-1 rounded text-xs border">${voter.address}</span></td>
+            <td class="p-3">${voter.gender === 'Laki-laki' ? '<span class="text-blue-600"><i class="fa-solid fa-mars mr-1"></i> Laki-laki</span>' : '<span class="text-pink-600"><i class="fa-solid fa-venus mr-1"></i> Perempuan</span>'}</td>
+            <td class="p-3 text-center text-xs text-gray-500">${dateStr} ${timeStr}</td>
+            ${actionColumnHTML}
         `;
         tableBody.appendChild(tr);
     });
