@@ -74,6 +74,19 @@ window.logoutAdmin = function() {
 
 function checkRouter() {
     const role = sessionStorage.getItem('sessionRole');
+    
+    // --- AMANKAN TOMBOL UPLOAD FOTO CALON ---
+    const wadahFoto = document.getElementById('wadah-foto-calon');
+    const inputFoto = document.getElementById('upload-foto');
+    if (wadahFoto && inputFoto) {
+        if (role === 'admin') {
+            wadahFoto.classList.add('cursor-pointer', 'group');
+            inputFoto.disabled = false;
+        } else {
+            wadahFoto.classList.remove('cursor-pointer', 'group');
+            inputFoto.disabled = true; // Kunci akses
+        }
+    }
     if (!role) {
         loginView.classList.remove('hidden');
         mainView.classList.add('hidden');
@@ -136,6 +149,7 @@ onValue(dbRef, (snapshot) => {
         appData.targetLk = data.settings?.targetLk || 0;
         appData.targetPr = data.settings?.targetPr || 0;
         appData.bgImage = data.settings?.bgImage || '';
+        appData.logoLogin = data.settings?.logoLogin || ''; // Tambahkan ini
         appData.fotoCalon = data.settings?.fotoCalon || '';
 
         const votersObj = data.voters || {};
@@ -156,6 +170,20 @@ onValue(dbRef, (snapshot) => {
     window.terapkanFotoCalon();
     bgLayer.style.backgroundImage = appData.bgImage ? `url(${appData.bgImage})` : 'none';
     
+    // Terapkan Logo di Halaman Login
+    const defaultLogo = document.getElementById('default-logo');
+    const customLogo = document.getElementById('custom-logo');
+    if (appData.logoLogin) {
+        if (defaultLogo) defaultLogo.classList.add('hidden');
+        if (customLogo) {
+            customLogo.src = appData.logoLogin;
+            customLogo.classList.remove('hidden');
+        }
+    } else {
+        if (defaultLogo) defaultLogo.classList.remove('hidden');
+        if (customLogo) customLogo.classList.add('hidden');
+    }
+
     // PERBAIKAN: Hanya panggil router jika sesi ada, dan jangan pindah tab secara otomatis jika currentActiveTab sudah terisi
     const isLoggedIn = sessionStorage.getItem('sessionRole');
     if (isLoggedIn) {
@@ -175,14 +203,18 @@ onValue(dbRef, (snapshot) => {
 });
 
 // --- Pengaturan Aplikasi (Admin) ---
+// --- Pengaturan Aplikasi (Admin) ---
 const pengaturanForm = document.getElementById('pengaturan-form');
 if (pengaturanForm) {
-    pengaturanForm.addEventListener('submit', function(e) {
+    pengaturanForm.addEventListener('submit', async function(e) {
         e.preventDefault();
+        
         const dptInput = parseInt(document.getElementById('edit-dpt-input').value) || 0;
         const targetLkInput = parseInt(document.getElementById('edit-target-lk').value) || 0;
         const targetPrInput = parseInt(document.getElementById('edit-target-pr').value) || 0;
+        
         const bgInput = document.getElementById('edit-bg-input').files[0];
+        const logoInput = document.getElementById('edit-logo-input').files[0];
 
         const settingsData = {
             dptTotal: dptInput,
@@ -190,21 +222,32 @@ if (pengaturanForm) {
             targetPr: targetPrInput
         };
 
-        if (bgInput) {
-            if(bgInput.size > 2 * 1024 * 1024) {
-                window.openModal({ type: 'error', title: 'Terlalu Besar', message: 'Maksimal 2MB.'});
+        // Fungsi pembaca file menjadi Promise
+        const readFile = (file) => new Promise((resolve, reject) => {
+            if(file.size > 2 * 1024 * 1024) {
+                window.openModal({ type: 'error', title: 'Terlalu Besar', message: 'Maksimal 2MB per gambar.'});
+                reject('Limit Size');
                 return;
             }
             const reader = new FileReader();
-            reader.onload = function(event) {
-                settingsData.bgImage = event.target.result;
-                update(ref(db, 'settings'), settingsData)
-                    .then(() => window.openModal({ type: 'success', title: 'Berhasil', message: 'Pengaturan dan DPT diperbarui.' }));
-            };
-            reader.readAsDataURL(bgInput);
-        } else {
-            update(ref(db, 'settings'), settingsData)
-                .then(() => window.openModal({ type: 'success', title: 'Berhasil', message: 'Target DPT diperbarui.' }));
+            reader.onload = (event) => resolve(event.target.result);
+            reader.onerror = (err) => reject(err);
+            reader.readAsDataURL(file);
+        });
+
+        try {
+            // Tunggu hingga proses baca file selesai (jika ada file yang dipilih)
+            if (bgInput) settingsData.bgImage = await readFile(bgInput);
+            if (logoInput) settingsData.logoLogin = await readFile(logoInput);
+            
+            // Simpan semua gabungan data ke Firebase
+            await update(ref(db, 'settings'), settingsData);
+            window.openModal({ type: 'success', title: 'Berhasil', message: 'Pengaturan dan DPT berhasil diperbarui.' });
+            
+            pengaturanForm.reset(); // Kosongkan input file agar tidak ganda saat simpan selanjutnya
+            
+        } catch (error) {
+            if (error !== 'Limit Size') console.error("Error upload:", error);
         }
     });
 }
@@ -332,6 +375,8 @@ window.renderUsers = function() {
 };
 
 window.deleteVoter = function(id) {
+    if (sessionStorage.getItem('sessionRole') === 'viewer') return window.openModal({type: 'error', title: 'Akses Ditolak', message: 'Pemantau tidak diizinkan menghapus data.'});
+    
     window.openModal({
         type: 'confirm', title: 'Hapus Data?', message: 'Yakin hapus data ini?',
         onConfirm: () => remove(ref(db, 'voters/' + id))
@@ -340,6 +385,8 @@ window.deleteVoter = function(id) {
 
 // --- Logika Edit Data Pemilih ---
 window.editVoter = function(id) {
+    if (sessionStorage.getItem('sessionRole') === 'viewer') return window.openModal({type: 'error', title: 'Akses Ditolak', message: 'Pemantau tidak diizinkan mengubah data.'});
+    
     // Cari data berdasarkan ID
     const voter = appData.voters.find(v => v.id === id);
     if (!voter) return;
@@ -590,6 +637,24 @@ window.closeModal = function() {
     const modal = document.getElementById('custom-modal');
     modal.classList.add('opacity-0');
     setTimeout(() => modal.classList.add('hidden'), 300);
+};
+
+// --- Logika Toggle Password (Tampil/Sembunyi) ---
+window.togglePassword = function(inputId, iconId) {
+    const inputField = document.getElementById(inputId);
+    const icon = document.getElementById(iconId);
+    
+    if (!inputField || !icon) return;
+
+    if (inputField.type === "password") {
+        inputField.type = "text";
+        icon.classList.remove("fa-eye-slash");
+        icon.classList.add("fa-eye");
+    } else {
+        inputField.type = "password";
+        icon.classList.remove("fa-eye");
+        icon.classList.add("fa-eye-slash");
+    }
 };
 
 window.updateDashboard = function() {
