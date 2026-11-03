@@ -231,7 +231,17 @@
                 <form id="pengaturan-form" class="space-y-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1" for="edit-dpt-input">Target Daftar Pemilih Tetap (DPT)</label>
-                        <input type="number" id="edit-dpt-input" required min="1" placeholder="Contoh: 5000" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none transition-all">
+                        <input type="number" id="edit-dpt-input" required min="1" placeholder="Contoh: 5000" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none transition-all" oninput="hitungTargetPerempuan()">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1" for="edit-target-lk">Target Laki-laki</label>
+                            <input type="number" id="edit-target-lk" required min="0" placeholder="0" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none transition-all" oninput="hitungTargetPerempuan()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1" for="edit-target-pr">Target Perempuan</label>
+                            <input type="number" id="edit-target-pr" readonly placeholder="0" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-gray-500 outline-none cursor-not-allowed">
+                        </div>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1" for="edit-bg-input">Background Aplikasi (Opsional)</label>
@@ -310,31 +320,60 @@
                 </div>
             </div>
 
-            <!-- Progress Bar -->
+            <!-- Progress Bars (3 Kolom) -->
             <div class="glass-panel rounded-xl p-6">
-                <div class="flex justify-between items-end mb-2">
+                <h3 class="font-bold text-gray-800 mb-4 border-b pb-2"><i class="fa-solid fa-chart-pie mr-2 text-brand-green1"></i> Progres Kemenangan</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Global -->
                     <div>
-                        <h3 class="font-bold text-gray-800">Progres Kemenangan</h3>
-                        <p class="text-sm text-gray-500">Target DPT: <span id="text-dpt" class="font-semibold text-brand-green2">0</span> Suara</p>
+                        <div class="flex justify-between items-end mb-1">
+                            <div>
+                                <p class="text-sm font-bold text-gray-700">Total Global</p>
+                                <p class="text-xs text-gray-500">Target: <span id="text-dpt" class="font-semibold text-brand-green2">0</span></p>
+                            </div>
+                            <span id="progress-text" class="text-xl font-black text-brand-green1">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                            <div id="progress-bar" class="bg-gradient-to-r from-brand-yellow to-brand-green1 h-3 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                        </div>
                     </div>
-                    <div class="text-right">
-                        <span id="progress-text" class="text-3xl font-black text-brand-green1">0%</span>
+
+                    <!-- Laki-laki -->
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <div>
+                                <p class="text-sm font-bold text-gray-700">Laki-laki</p>
+                                <p class="text-xs text-gray-500">Target: <span id="text-target-lk" class="font-semibold text-blue-600">0</span></p>
+                            </div>
+                            <span id="percent-target-lk" class="text-xl font-black text-blue-500">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                            <div id="progress-bar-lk" class="bg-blue-400 h-3 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                        </div>
                     </div>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
-                    <div id="progress-bar" class="bg-gradient-to-r from-brand-yellow to-brand-green1 h-4 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+
+                    <!-- Perempuan -->
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <div>
+                                <p class="text-sm font-bold text-gray-700">Perempuan</p>
+                                <p class="text-xs text-gray-500">Target: <span id="text-target-pr" class="font-semibold text-pink-600">0</span></p>
+                            </div>
+                            <span id="percent-target-pr" class="text-xl font-black text-pink-500">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                            <div id="progress-bar-pr" class="bg-pink-400 h-3 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <!-- Charts -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 gap-6">
                 <div class="glass-panel rounded-xl p-6">
                     <h3 class="font-bold text-gray-800 mb-4 text-center">Sebaran Per Dusun</h3>
                     <div class="relative h-64 w-full"><canvas id="addressChart"></canvas></div>
-                </div>
-                <div class="glass-panel rounded-xl p-6">
-                    <h3 class="font-bold text-gray-800 mb-4 text-center">Proporsi Jenis Kelamin</h3>
-                    <div class="relative h-64 w-full flex justify-center"><canvas id="genderChart"></canvas></div>
                 </div>
             </div>
         </div>
@@ -347,6 +386,15 @@
             
             <!-- Filters -->
             <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                <!-- TAMBAHAN: Input Filter Nama -->
+                <div class="relative w-full sm:w-64">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                    </span>
+                    <input type="text" id="filter-nama" oninput="renderTable()" placeholder="Cari nama pemilih..." 
+                        class="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white text-gray-700 uppercase">
+                </div>
+                
                 <select id="filter-alamat" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
                     <option value="semua">Semua Alamat</option>
                     <option value="Dusun 1">Dusun 1</option>
