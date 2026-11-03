@@ -15,10 +15,11 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
 // --- State Management ---
-let appData = { dptTotal: 0, bgImage: '', fotoCalon: '', voters: [], users: [] };
-let currentActiveTab = null; // Variabel baru untuk melacak posisi tab
+// Update struktur appData
+let appData = { dptTotal: 0, targetLk: 0, targetPr: 0, bgImage: '', fotoCalon: '', voters: [], users: [] };
+let currentActiveTab = null; 
 let addressChartInstance = null;
-let genderChartInstance = null;
+// genderChartInstance dihapus
 
 const bgLayer = document.getElementById('bg-layer');
 const voterForm = document.getElementById('voter-form');
@@ -113,6 +114,8 @@ onValue(dbRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
         appData.dptTotal = data.settings?.dptTotal || 0;
+        appData.targetLk = data.settings?.targetLk || 0;
+        appData.targetPr = data.settings?.targetPr || 0;
         appData.bgImage = data.settings?.bgImage || '';
         appData.fotoCalon = data.settings?.fotoCalon || '';
 
@@ -134,12 +137,22 @@ onValue(dbRef, (snapshot) => {
     window.terapkanFotoCalon();
     bgLayer.style.backgroundImage = appData.bgImage ? `url(${appData.bgImage})` : 'none';
     
-    // Panggil router untuk mengelola perpindahan view dengan aman
-    checkRouter();
+    // PERBAIKAN: Hanya panggil router jika sesi ada, dan jangan pindah tab secara otomatis jika currentActiveTab sudah terisi
+    const isLoggedIn = sessionStorage.getItem('sessionRole');
+    if (isLoggedIn) {
+        if (!currentActiveTab) {
+            checkRouter(); 
+        } else {
+             // Jika sudah di dalam tab, cukup update UI statis tanpa memanggil router (mencegah kedip)
+             document.getElementById('text-dpt').innerText = (appData.dptTotal || 0).toLocaleString('id-ID');
+        }
+    } else {
+         checkRouter(); // Jika tidak login, biarkan router mengarahkan ke form login
+    }
     
     window.updateDashboard();
-    window.renderTable();
-    window.renderUsers(); 
+    window.renderTable(); 
+    if(window.renderUsers) window.renderUsers();
 });
 
 // --- Pengaturan Aplikasi (Admin) ---
@@ -147,8 +160,16 @@ const pengaturanForm = document.getElementById('pengaturan-form');
 if (pengaturanForm) {
     pengaturanForm.addEventListener('submit', function(e) {
         e.preventDefault();
-        const dptInput = document.getElementById('edit-dpt-input').value;
+        const dptInput = parseInt(document.getElementById('edit-dpt-input').value) || 0;
+        const targetLkInput = parseInt(document.getElementById('edit-target-lk').value) || 0;
+        const targetPrInput = parseInt(document.getElementById('edit-target-pr').value) || 0;
         const bgInput = document.getElementById('edit-bg-input').files[0];
+
+        const settingsData = {
+            dptTotal: dptInput,
+            targetLk: targetLkInput,
+            targetPr: targetPrInput
+        };
 
         if (bgInput) {
             if(bgInput.size > 2 * 1024 * 1024) {
@@ -157,14 +178,13 @@ if (pengaturanForm) {
             }
             const reader = new FileReader();
             reader.onload = function(event) {
-                update(ref(db, 'settings'), { 
-                    dptTotal: parseInt(dptInput),
-                    bgImage: event.target.result
-                }).then(() => window.openModal({ type: 'success', title: 'Berhasil', message: 'Pengaturan dan DPT diperbarui.' }));
+                settingsData.bgImage = event.target.result;
+                update(ref(db, 'settings'), settingsData)
+                    .then(() => window.openModal({ type: 'success', title: 'Berhasil', message: 'Pengaturan dan DPT diperbarui.' }));
             };
             reader.readAsDataURL(bgInput);
         } else {
-            update(ref(db, 'settings'), { dptTotal: parseInt(dptInput) })
+            update(ref(db, 'settings'), settingsData)
                 .then(() => window.openModal({ type: 'success', title: 'Berhasil', message: 'Target DPT diperbarui.' }));
         }
     });
@@ -223,6 +243,20 @@ window.terapkanFotoCalon = function() {
         wadah.style.backgroundImage = 'none';
         teks.classList.remove('hidden');
     }
+};
+
+window.hitungTargetPerempuan = function() {
+    const totalDPT = parseInt(document.getElementById('edit-dpt-input').value) || 0;
+    const targetLk = parseInt(document.getElementById('edit-target-lk').value) || 0;
+    
+    // Mencegah input laki-laki melebihi total DPT
+    let targetPr = totalDPT - targetLk;
+    if (targetPr < 0) {
+        targetPr = 0;
+        document.getElementById('edit-target-lk').value = totalDPT; // Set max
+    }
+    
+    document.getElementById('edit-target-pr').value = targetPr;
 };
 
 // --- Logika Form Kelola Akun (Admin) ---
@@ -473,10 +507,34 @@ window.updateDashboard = function() {
     document.getElementById('stat-male').innerText = males.toLocaleString('id-ID');
     document.getElementById('stat-female').innerText = females.toLocaleString('id-ID');
 
+    // Persentase Progres Utama
     const percentage = appData.dptTotal > 0 ? ((total / appData.dptTotal) * 100).toFixed(1) : 0;
     document.getElementById('progress-text').innerText = `${percentage}%`;
     document.getElementById('progress-bar').style.width = `${Math.min(percentage, 100)}%`;
 
+    // Update Target DPT Laki-laki & Perempuan di bawah Progres Kemenangan
+    const elTargetLk = document.getElementById('text-target-lk');
+    const elTargetPr = document.getElementById('text-target-pr');
+    const elPctLk = document.getElementById('percent-target-lk');
+    const elPctPr = document.getElementById('percent-target-pr');
+
+    if (elTargetLk) elTargetLk.innerText = (appData.targetLk || 0).toLocaleString('id-ID');
+    if (elTargetPr) elTargetPr.innerText = (appData.targetPr || 0).toLocaleString('id-ID');
+
+    const pctMale = appData.targetLk > 0 ? ((males / appData.targetLk) * 100).toFixed(1) : 0;
+    const pctFemale = appData.targetPr > 0 ? ((females / appData.targetPr) * 100).toFixed(1) : 0;
+
+    if (elPctLk) elPctLk.innerText = `${pctMale}%`;
+    if (elPctPr) elPctPr.innerText = `${pctFemale}%`;
+
+    // Animasi Progress Bar Laki-laki & Perempuan
+    const pBarLk = document.getElementById('progress-bar-lk');
+    const pBarPr = document.getElementById('progress-bar-pr');
+    
+    if (pBarLk) pBarLk.style.width = `${Math.min(pctMale, 100)}%`;
+    if (pBarPr) pBarPr.style.width = `${Math.min(pctFemale, 100)}%`;
+
+    // Update Chart Alamat
     const dusunLabels = ['Dusun 1', 'Dusun 2', 'Dusun 3', 'Dusun 4', 'Dusun 5', 'Dusun 6', 'Dusun 7', 'Dusun 8'];
     const addressCounts = new Array(8).fill(0);
     
@@ -485,47 +543,31 @@ window.updateDashboard = function() {
         if (index !== -1) addressCounts[index]++;
     });
 
-    const ctxAddress = document.getElementById('addressChart').getContext('2d');
-    if (addressChartInstance) {
-        addressChartInstance.data.datasets[0].data = addressCounts;
-        addressChartInstance.update();
-    } else {
-        addressChartInstance = new Chart(ctxAddress, {
-            type: 'bar',
-            data: {
-                labels: dusunLabels,
-                datasets: [{
-                    label: 'Jumlah Pemilih',
-                    data: addressCounts,
-                    backgroundColor: '#2F6B3F',
-                    borderColor: '#0B3D2E',
-                    borderWidth: 1,
-                    borderRadius: 4
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-        });
+    const ctxAddress = document.getElementById('addressChart');
+    if (ctxAddress) {
+        if (addressChartInstance) {
+            addressChartInstance.data.datasets[0].data = addressCounts;
+            addressChartInstance.update();
+        } else {
+            addressChartInstance = new Chart(ctxAddress.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: dusunLabels,
+                    datasets: [{
+                        label: 'Jumlah Pemilih',
+                        data: addressCounts,
+                        backgroundColor: '#2F6B3F',
+                        borderColor: '#0B3D2E',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+            });
+        }
     }
-
-    const ctxGender = document.getElementById('genderChart').getContext('2d');
-    if (genderChartInstance) {
-        genderChartInstance.data.datasets[0].data = [males, females];
-        genderChartInstance.update();
-    } else {
-        genderChartInstance = new Chart(ctxGender, {
-            type: 'pie',
-            data: {
-                labels: ['Laki-laki', 'Perempuan'],
-                datasets: [{
-                    data: [males, females],
-                    backgroundColor: ['#3B82F6', '#EC4899'],
-                    borderWidth: 0,
-                    hoverOffset: 4
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-        });
-    }
+    
+    // Hapus kode genderChartInstance karena elemen canvas-nya sudah dihapus
 };
 
 window.renderTable = function() {
@@ -533,15 +575,19 @@ window.renderTable = function() {
     const emptyState = document.getElementById('empty-state');
     tableBody.innerHTML = '';
     
+    const elNama = document.getElementById('filter-nama');
     const elAlamat = document.getElementById('filter-alamat');
     const elJk = document.getElementById('filter-jk');
+    
+    const valNama = elNama ? elNama.value.trim().toLowerCase() : '';
     const valAlamat = elAlamat ? elAlamat.value : 'semua';
     const valJk = elJk ? elJk.value : 'semua';
 
     const filteredVoters = appData.voters.filter(voter => {
+        const matchNama = valNama === '' || voter.name.toLowerCase().includes(valNama);
         const matchAlamat = (valAlamat === 'semua') || (voter.address === valAlamat);
         const matchJk = (valJk === 'semua') || (voter.gender === valJk);
-        return matchAlamat && matchJk;
+        return matchNama && matchAlamat && matchJk;
     });
     
     if (filteredVoters.length === 0) {
