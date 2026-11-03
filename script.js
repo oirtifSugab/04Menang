@@ -1,794 +1,485 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-import { getDatabase, ref, onValue, push, update, remove } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAWON GAGASAN | BIDANG RISET DAN DATA STRATEGIS </title>
 
-const firebaseConfig = {
-    apiKey: "AIzaSyC61C_WZjL6TRLGZ0o5ssRU0YwaEl4rIHg",
-    authDomain: "menang-f11af.firebaseapp.com",
-    databaseURL: "https://menang-f11af-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "menang-f11af",
-    storageBucket: "menang-f11af.firebasestorage.app",
-    messagingSenderId: "210917784585",
-    appId: "1:210917784585:web:026f352c6d55948922ccd8"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-
-// --- State Management ---
-// Update struktur appData
-let appData = { dptTotal: 0, targetLk: 0, targetPr: 0, bgImage: '', fotoCalon: '', voters: [], users: [] };
-let currentActiveTab = null; 
-let addressChartInstance = null;
-// genderChartInstance dihapus
-
-const bgLayer = document.getElementById('bg-layer');
-const voterForm = document.getElementById('voter-form');
-
-// View Elements
-const loginView = document.getElementById('login-view');
-const mainView = document.getElementById('main-view');
-
-// --- Logika Login/Autentikasi ---
-document.getElementById('login-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const u = document.getElementById('username').value.trim();
-    const p = document.getElementById('password').value.trim();
-
-    // Cek Master Admin
-    if (u === "04menang" && p === "pawongagasan") {
-        sessionStorage.setItem('sessionRole', 'admin');
-        sessionStorage.setItem('sessionName', 'Administrator');
-        window.openModal({ type: 'success', title: 'Berhasil', message: 'Selamat datang, Admin Master!' });
-        setTimeout(() => { window.closeModal(); checkRouter(); }, 1000);
-        return;
-    } 
-
-    // Cek Akun Pemantau (Read-only)
-    if (u === "relawan04" && p === "relawan04") {
-        sessionStorage.setItem('sessionRole', 'viewer');
-        sessionStorage.setItem('sessionName', 'Tim Pemantau');
-        window.openModal({ type: 'success', title: 'Berhasil', message: 'Selamat datang, Tim Pemantau!' });
-        setTimeout(() => { window.closeModal(); checkRouter(); }, 1000);
-        return;
-    }
-
-    // Cek Relawan (User) di Database
-    const userFound = appData.users.find(user => user.username === u && user.password === p);
-    if (userFound) {
-        sessionStorage.setItem('sessionRole', 'user');
-        sessionStorage.setItem('sessionName', userFound.nama);
-        sessionStorage.setItem('sessionUsername', userFound.username);
-        window.openModal({ type: 'success', title: 'Berhasil', message: `Selamat bekerja, ${userFound.nama}!` });
-        setTimeout(() => { window.closeModal(); checkRouter(); }, 1000);
-    } else {
-        window.openModal({ type: 'error', title: 'Akses Ditolak', message: 'Username atau Kata Sandi salah/tidak ditemukan.' });
-    }
-});
-
-window.logoutAdmin = function() {
-    sessionStorage.clear();
-    currentActiveTab = null; // Reset posisi tab agar kembali ke default saat login lagi
-    document.getElementById('login-form').reset();
-    checkRouter();
-};
-
-function checkRouter() {
-    const role = sessionStorage.getItem('sessionRole');
+    <!-- Favicon (Ikon Web) -->
+    <link rel="icon" type="image/png" href="logo.png">
     
-    // --- AMANKAN TOMBOL UPLOAD FOTO CALON ---
-    const wadahFoto = document.getElementById('wadah-foto-calon');
-    const inputFoto = document.getElementById('upload-foto');
-    if (wadahFoto && inputFoto) {
-        if (role === 'admin') {
-            wadahFoto.classList.add('cursor-pointer', 'group');
-            inputFoto.disabled = false;
-        } else {
-            wadahFoto.classList.remove('cursor-pointer', 'group');
-            inputFoto.disabled = true; // Kunci akses
-        }
-    }
-    if (!role) {
-        loginView.classList.remove('hidden');
-        mainView.classList.add('hidden');
-        return;
-    }
-
-    loginView.classList.add('hidden');
-    mainView.classList.remove('hidden');
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    // Update text DPT di progress bar (seperti di gambar)
-    document.getElementById('text-dpt').innerText = (appData.dptTotal || 0).toLocaleString('id-ID');
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
-    // Atur visibilitas tab berdasarkan Role
-    document.getElementById('btn-tab-hasil').classList.remove('hidden');
-    document.getElementById('btn-tab-tabel').classList.remove('hidden');
-    
-    const thAksi = document.getElementById('th-aksi');
+    <!-- SheetJS (Untuk Export ke Excel) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
-    if (role === 'admin') {
-        document.getElementById('btn-tab-akun').classList.remove('hidden');
-        document.getElementById('btn-tab-pengaturan').classList.remove('hidden');
-        document.getElementById('btn-tab-input').classList.add('hidden');
-        if (thAksi) thAksi.classList.remove('hidden'); // Munculkan kolom Aksi
-        
-        if (!currentActiveTab) window.switchTab('tab-akun');
-        
-        const dptInputEl = document.getElementById('edit-dpt-input');
-        if (dptInputEl && document.activeElement !== dptInputEl) dptInputEl.value = appData.dptTotal || '';
-        const lkInputEl = document.getElementById('edit-target-lk');
-        if (lkInputEl && document.activeElement !== lkInputEl) lkInputEl.value = appData.targetLk || '';
-        const prInputEl = document.getElementById('edit-target-pr');
-        if (prInputEl && document.activeElement !== prInputEl) prInputEl.value = appData.targetPr || '';
-        
-    } else if (role === 'viewer') {
-        // PENGATURAN KHUSUS PEMANTAU (Read-Only)
-        document.getElementById('btn-tab-akun').classList.add('hidden');
-        document.getElementById('btn-tab-pengaturan').classList.add('hidden');
-        document.getElementById('btn-tab-input').classList.add('hidden'); // Sembunyikan Input
-        if (thAksi) thAksi.classList.add('hidden'); // Sembunyikan kolom Aksi
-        
-        if (!currentActiveTab) window.switchTab('tab-hasil'); // Default pemantau ke Dasbor Hasil
-        
-    } else {
-        // PENGATURAN RELAWAN (User biasa)
-        document.getElementById('btn-tab-akun').classList.add('hidden');
-        document.getElementById('btn-tab-pengaturan').classList.add('hidden');
-        document.getElementById('btn-tab-input').classList.remove('hidden');
-        if (thAksi) thAksi.classList.remove('hidden'); // Munculkan kolom Aksi
-        
-        if (!currentActiveTab) window.switchTab('tab-input');
-    }
-}
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-// --- Listener Realtime Data ---
-const dbRef = ref(db, '/');
-onValue(dbRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        appData.dptTotal = data.settings?.dptTotal || 0;
-        appData.targetLk = data.settings?.targetLk || 0;
-        appData.targetPr = data.settings?.targetPr || 0;
-        appData.bgImage = data.settings?.bgImage || '';
-        appData.logoLogin = data.settings?.logoLogin || ''; // Tambahkan ini
-        appData.fotoCalon = data.settings?.fotoCalon || '';
-
-        const votersObj = data.voters || {};
-        appData.voters = Object.keys(votersObj).map(key => ({
-            id: key,
-            ...votersObj[key]
-        })).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-        
-        const usersObj = data.users || {};
-        appData.users = Object.keys(usersObj).map(key => ({
-            id: key,
-            ...usersObj[key]
-        }));
-    } else {
-        appData = { dptTotal: 0, bgImage: '', fotoCalon: '', voters: [], users: [] };
-    }
-
-    window.terapkanFotoCalon();
-    bgLayer.style.backgroundImage = appData.bgImage ? `url(${appData.bgImage})` : 'none';
-    
-    // Terapkan Logo di Halaman Login
-    const defaultLogo = document.getElementById('default-logo');
-    const customLogo = document.getElementById('custom-logo');
-    if (appData.logoLogin) {
-        if (defaultLogo) defaultLogo.classList.add('hidden');
-        if (customLogo) {
-            customLogo.src = appData.logoLogin;
-            customLogo.classList.remove('hidden');
-        }
-    } else {
-        if (defaultLogo) defaultLogo.classList.remove('hidden');
-        if (customLogo) customLogo.classList.add('hidden');
-    }
-
-    // PERBAIKAN: Hanya panggil router jika sesi ada, dan jangan pindah tab secara otomatis jika currentActiveTab sudah terisi
-    const isLoggedIn = sessionStorage.getItem('sessionRole');
-    if (isLoggedIn) {
-        if (!currentActiveTab) {
-            checkRouter(); 
-        } else {
-             // Jika sudah di dalam tab, cukup update UI statis tanpa memanggil router (mencegah kedip)
-             document.getElementById('text-dpt').innerText = (appData.dptTotal || 0).toLocaleString('id-ID');
-        }
-    } else {
-         checkRouter(); // Jika tidak login, biarkan router mengarahkan ke form login
-    }
-    
-    window.updateDashboard();
-    window.renderTable(); 
-    if(window.renderUsers) window.renderUsers();
-});
-
-// --- Pengaturan Aplikasi (Admin) ---
-// --- Pengaturan Aplikasi (Admin) ---
-const pengaturanForm = document.getElementById('pengaturan-form');
-if (pengaturanForm) {
-    pengaturanForm.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        
-        const dptInput = parseInt(document.getElementById('edit-dpt-input').value) || 0;
-        const targetLkInput = parseInt(document.getElementById('edit-target-lk').value) || 0;
-        const targetPrInput = parseInt(document.getElementById('edit-target-pr').value) || 0;
-        
-        const bgInput = document.getElementById('edit-bg-input').files[0];
-        const logoInput = document.getElementById('edit-logo-input').files[0];
-
-        const settingsData = {
-            dptTotal: dptInput,
-            targetLk: targetLkInput,
-            targetPr: targetPrInput
-        };
-
-        // Fungsi pembaca file menjadi Promise
-        const readFile = (file) => new Promise((resolve, reject) => {
-            if(file.size > 2 * 1024 * 1024) {
-                window.openModal({ type: 'error', title: 'Terlalu Besar', message: 'Maksimal 2MB per gambar.'});
-                reject('Limit Size');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = (event) => resolve(event.target.result);
-            reader.onerror = (err) => reject(err);
-            reader.readAsDataURL(file);
-        });
-
-        try {
-            // Tunggu hingga proses baca file selesai (jika ada file yang dipilih)
-            if (bgInput) settingsData.bgImage = await readFile(bgInput);
-            if (logoInput) settingsData.logoLogin = await readFile(logoInput);
-            
-            // Simpan semua gabungan data ke Firebase
-            await update(ref(db, 'settings'), settingsData);
-            window.openModal({ type: 'success', title: 'Berhasil', message: 'Pengaturan dan DPT berhasil diperbarui.' });
-            
-            pengaturanForm.reset(); // Kosongkan input file agar tidak ganda saat simpan selanjutnya
-            
-        } catch (error) {
-            if (error !== 'Limit Size') console.error("Error upload:", error);
-        }
-    });
-}
-
-// --- Voter Form ---
-voterForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    let nama = document.getElementById('nama').value.trim();
-    const alamat = document.getElementById('alamat').value;
-    const jk = document.getElementById('jk').value;
-    const normalizedName = nama.toLowerCase().replace(/\s+/g, ' ');
-
-    const isDuplicate = appData.voters.some(v => v.name.toLowerCase().replace(/\s+/g, ' ') === normalizedName);
-    if (isDuplicate) {
-        window.openModal({ type: 'error', title: 'Data Ganda!', message: `Nama "${nama}" sudah terdaftar.` });
-        return;
-    }
-
-    const relawanName = sessionStorage.getItem('sessionName') || 'Unknown';
-    const newVoter = { 
-        name: nama, 
-        address: alamat, 
-        gender: jk, 
-        inputBy: relawanName,
-        timestamp: new Date().toISOString() 
-    };
-    push(ref(db, 'voters'), newVoter);
-
-    voterForm.reset();
-    document.getElementById('nama').focus();
-});
-
-// --- Fungsi Global (Terhubung dengan HTML) ---
-window.handleFotoCalon = function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    if(file.size > 2 * 1024 * 1024) {
-        window.openModal({ type: 'error', title: 'Terlalu Besar', message: 'Maksimal 2MB.'});
-        return;
-    }
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        update(ref(db, 'settings'), { fotoCalon: e.target.result });
-    };
-    reader.readAsDataURL(file);
-};
-
-window.terapkanFotoCalon = function() {
-    const wadah = document.getElementById('wadah-foto-calon');
-    const teks = document.getElementById('teks-04');
-    if (appData.fotoCalon) {
-        wadah.style.backgroundImage = `url(${appData.fotoCalon})`;
-        teks.classList.add('hidden');
-    } else {
-        wadah.style.backgroundImage = 'none';
-        teks.classList.remove('hidden');
-    }
-};
-
-window.hitungTargetPerempuan = function() {
-    const totalDPT = parseInt(document.getElementById('edit-dpt-input').value) || 0;
-    const targetLk = parseInt(document.getElementById('edit-target-lk').value) || 0;
-    
-    // Mencegah input laki-laki melebihi total DPT
-    let targetPr = totalDPT - targetLk;
-    if (targetPr < 0) {
-        targetPr = 0;
-        document.getElementById('edit-target-lk').value = totalDPT; // Set max
-    }
-    
-    document.getElementById('edit-target-pr').value = targetPr;
-};
-
-// --- Logika Form Kelola Akun (Admin) ---
-const userForm = document.getElementById('user-form');
-if(userForm) {
-    userForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const namaUser = document.getElementById('new-nama-user').value.trim();
-        const username = document.getElementById('new-username').value.trim().toLowerCase();
-        const password = document.getElementById('new-password').value.trim();
-
-        const isDuplicate = appData.users.some(u => u.username === username);
-        if (isDuplicate || username === "04menang") {
-            window.openModal({ type: 'error', title: 'Gagal', message: 'Username sudah digunakan, pilih yang lain.' });
-            return;
-        }
-
-        push(ref(db, 'users'), { nama: namaUser, username: username, password: password });
-        userForm.reset();
-        window.openModal({ type: 'success', title: 'Berhasil', message: `Akun untuk ${namaUser} berhasil dibuat.` });
-    });
-}
-
-window.deleteUserAcc = function(id, nama) {
-    window.openModal({
-        type: 'confirm', title: 'Hapus Akun?', message: `Yakin menghapus akses untuk relawan ${nama}?`,
-        onConfirm: () => remove(ref(db, 'users/' + id))
-    });
-};
-
-window.renderUsers = function() {
-    const tbody = document.getElementById('user-table-body');
-    if(!tbody) return;
-    tbody.innerHTML = '';
-
-    appData.users.forEach(user => {
-        // Hitung berapa data yang sudah diinput relawan ini
-        const totalInput = appData.voters.filter(v => v.inputBy === user.nama).length;
-        
-        const tr = document.createElement('tr');
-        tr.className = "border-b hover:bg-brand-offwhite/50 transition-colors";
-        tr.innerHTML = `
-            <td class="p-3 font-semibold text-brand-green2">${user.nama}</td>
-            <td class="p-3 text-gray-600">${user.username}</td>
-            <td class="p-3 text-center"><span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">${totalInput} Suara</span></td>
-            <td class="p-3 text-center">
-                <button onclick="window.deleteUserAcc('${user.id}', '${user.nama}')" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded transition-colors" title="Hapus Akun">
-                    <i class="fa-solid fa-trash"></i>
-                </button>
-            </td>
-        `;
-        tbody.appendChild(tr);
-    });
-};
-
-window.deleteVoter = function(id) {
-    if (sessionStorage.getItem('sessionRole') === 'viewer') return window.openModal({type: 'error', title: 'Akses Ditolak', message: 'Pemantau tidak diizinkan menghapus data.'});
-    
-    window.openModal({
-        type: 'confirm', title: 'Hapus Data?', message: 'Yakin hapus data ini?',
-        onConfirm: () => remove(ref(db, 'voters/' + id))
-    });
-};
-
-// --- Logika Edit Data Pemilih ---
-window.editVoter = function(id) {
-    if (sessionStorage.getItem('sessionRole') === 'viewer') return window.openModal({type: 'error', title: 'Akses Ditolak', message: 'Pemantau tidak diizinkan mengubah data.'});
-    
-    // Cari data berdasarkan ID
-    const voter = appData.voters.find(v => v.id === id);
-    if (!voter) return;
-    
-    // Isi nilai ke dalam form modal edit
-    document.getElementById('edit-id').value = voter.id;
-    document.getElementById('edit-nama').value = voter.name;
-    document.getElementById('edit-alamat').value = voter.address;
-    document.getElementById('edit-jk').value = voter.gender;
-    
-    // Tampilkan modal
-    const modal = document.getElementById('edit-modal');
-    modal.classList.remove('hidden', 'opacity-0');
-};
-
-window.closeEditModal = function() {
-    const modal = document.getElementById('edit-modal');
-    modal.classList.add('opacity-0');
-    setTimeout(() => modal.classList.add('hidden'), 300);
-};
-
-const editVoterForm = document.getElementById('edit-voter-form');
-if (editVoterForm) {
-    editVoterForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        const id = document.getElementById('edit-id').value;
-        const nama = document.getElementById('edit-nama').value.trim();
-        const alamat = document.getElementById('edit-alamat').value;
-        const jk = document.getElementById('edit-jk').value;
-        
-        // Cek duplikat data (kecuali dirinya sendiri yang sedang diedit)
-        const normalizedName = nama.toLowerCase().replace(/\s+/g, ' ');
-        const isDuplicate = appData.voters.some(v => v.id !== id && v.name.toLowerCase().replace(/\s+/g, ' ') === normalizedName);
-        if (isDuplicate) {
-            window.openModal({ type: 'error', title: 'Data Ganda!', message: `Nama "${nama}" sudah terdaftar di sistem.` });
-            return;
-        }
-
-        // Update data ke Firebase
-        update(ref(db, 'voters/' + id), {
-            name: nama,
-            address: alamat,
-            gender: jk
-            // timestamp dan inputBy tidak diubah agar riwayat aslinya tetap terjaga
-        }).then(() => {
-            window.closeEditModal();
-            window.openModal({ type: 'success', title: 'Berhasil', message: 'Data pemilih berhasil diperbarui.' });
-        }).catch((error) => {
-            window.openModal({ type: 'error', title: 'Gagal', message: 'Gagal memperbarui data. Periksa koneksi internet.' });
-        });
-    });
-}
-
-window.confirmReset = function() {
-    window.openModal({
-        type: 'confirm', title: 'Reset Data Pemilih?', message: 'Data pemilih akan dihapus dari server. (Foto calon dipertahankan)',
-        onConfirm: () => {
-            const sandi = prompt("Masukkan sandi keamanan:");
-            if (sandi === "04Menang") {
-                remove(ref(db, 'voters'));
-                update(ref(db, 'settings'), {
-                    dptTotal: 0,
-                    bgImage: '',
-                    fotoCalon: appData.fotoCalon || ''
-                });
-
-                document.getElementById('admin-form').reset();
-                setTimeout(() => window.openModal({ type: 'success', title: 'Berhasil', message: 'Data pemilih berhasil di-reset.' }), 500);
-            } else if (sandi !== null) {
-                setTimeout(() => window.openModal({ type: 'error', title: 'Ditolak', message: 'Sandi salah!' }), 500);
-            }
-        }
-    });
-};
-
-// Update switchTab agar lebih aman dan tidak menghapus class 'hidden'
-window.switchTab = function(targetTab) {
-    const role = sessionStorage.getItem('sessionRole');
-    
-    // 1. Keamanan Ekstra
-    if ((targetTab === 'tab-akun' || targetTab === 'tab-pengaturan') && role !== 'admin') {
-        console.warn("Akses ditolak: Hanya Admin.");
-        return;
-    }
-    // Pemantau dilarang masuk ke tab Input
-    if (targetTab === 'tab-input' && role === 'viewer') {
-        console.warn("Akses ditolak: Pemantau tidak dapat menginput data.");
-        return;
-    }
-
-    // SIMPAN NAMA TAB KE DALAM VARIABEL TRACKING
-    currentActiveTab = targetTab;
-
-    // 2. Sembunyikan semua konten tab
-    document.getElementById('tab-akun').classList.add('hidden');
-    if(document.getElementById('tab-pengaturan')) document.getElementById('tab-pengaturan').classList.add('hidden');
-    document.getElementById('tab-input').classList.add('hidden');
-    document.getElementById('tab-hasil').classList.add('hidden');
-    document.getElementById('tab-tabel').classList.add('hidden');
-    
-    // 3. Reset warna tombol ke default TANPA menghapus class 'hidden'
-    const buttons = ['btn-tab-akun', 'btn-tab-pengaturan', 'btn-tab-input', 'btn-tab-hasil', 'btn-tab-tabel'];
-    buttons.forEach(btnId => {
-        const btn = document.getElementById(btnId);
-        if(btn) {
-            btn.classList.remove('bg-brand-green1', 'text-white'); // Hapus warna aktif
-            btn.classList.add('bg-gray-200', 'text-gray-600', 'hover:bg-gray-300'); // Tambah warna pasif
-        }
-    });
-
-    // 4. Tampilkan konten tab yang dipilih
-    document.getElementById(targetTab).classList.remove('hidden');
-    
-    // 5. Beri warna aktif khusus pada tombol yang dipilih
-    const activeBtn = document.getElementById(`btn-${targetTab}`);
-    if(activeBtn) {
-        activeBtn.classList.remove('bg-gray-200', 'text-gray-600', 'hover:bg-gray-300');
-        activeBtn.classList.add('bg-brand-green1', 'text-white');
-    }
-};
-
-window.exportData = function() {
-    if(appData.voters.length === 0) {
-        window.openModal({type: 'info', title: 'Kosong', message: 'Tidak ada data.'});
-        return;
-    }
-    const dataUntukExcel = appData.voters.map(voter => {
-        const dateObj = new Date(voter.timestamp);
-        const waktuFormat = dateObj.toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) + ' ' + 
-                            dateObj.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
-        return {
-            "Nama Lengkap": voter.name.toUpperCase(),
-            "Alamat": voter.address,
-            "Jenis Kelamin": voter.gender,
-            "Waktu Input": waktuFormat
-        };
-    });
-    const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Data Pemilih");
-    XLSX.writeFile(workbook, "Data_Pemilih_04_Tika_Liyana.xlsx");
-};
-
-window.importData = function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const data = new Uint8Array(e.target.result);
-            const workbook = XLSX.read(data, {type: 'array'});
-            
-            // Ambil sheet pertama
-            const firstSheetName = workbook.SheetNames[0];
-            const worksheet = workbook.Sheets[firstSheetName];
-            
-            // Konversi ke format JSON JSON
-            const json_data = XLSX.utils.sheet_to_json(worksheet);
-
-            if (json_data.length === 0) {
-                window.openModal({type: 'error', title: 'Data Kosong', message: 'File Excel tidak memiliki isi data.'});
-                document.getElementById('import-excel').value = ""; // Reset input
-                return;
-            }
-
-            let importedCount = 0;
-            let duplicateCount = 0;
-            const relawanName = sessionStorage.getItem('sessionName') || 'System Import';
-
-            json_data.forEach(row => {
-                // Sesuaikan dengan penamaan kunci header yang diexport
-                const nama = row["Nama Lengkap"];
-                const alamat = row["Alamat"];
-                const jk = row["Jenis Kelamin"];
-
-                if (nama && alamat && jk) {
-                    const normalizedName = String(nama).trim().toLowerCase().replace(/\s+/g, ' ');
-                    const isDuplicate = appData.voters.some(v => v.name.toLowerCase().replace(/\s+/g, ' ') === normalizedName);
-                    
-                    if (isDuplicate) {
-                        duplicateCount++;
-                    } else {
-                        const newVoter = {
-                            name: String(nama).trim().toUpperCase(),
-                            address: String(alamat).trim(),
-                            gender: String(jk).trim(),
-                            inputBy: relawanName,
-                            timestamp: new Date().toISOString() // Generate waktu saat ini
-                        };
-                        push(ref(db, 'voters'), newVoter);
-                        importedCount++;
+    <!-- Tailwind Config for Custom Colors -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            yellow: '#F2C94C',
+                            green1: '#2F6B3F',
+                            green2: '#0B3D2E',
+                            offwhite: '#F7F3E8',
+                            olive: '#8C7A3B'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
                     }
                 }
-            });
+            }
+        }
+    </script>
 
-            document.getElementById('import-excel').value = ""; // Reset input
+    <link rel="stylesheet" href="style.css">
+
+</head>
+<body class="text-gray-800 antialiased relative">
+
+    <!-- Background Layer -->
+    <div id="bg-layer"></div>
+
+    <!-- ==================== LOGIN VIEW ==================== -->
+    <div id="login-view" class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-md rounded-2xl p-8 relative overflow-hidden">
+            <!-- Outline diubah menjadi Gold ke Merah -->
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-500 via-red-600 to-red-700"></div>
             
-            window.openModal({
-                type: 'success', 
-                title: 'Import Selesai', 
-                message: `Berhasil mengimpor ${importedCount} data pemilih. \n(${duplicateCount} data dilewati karena duplikat).`
-            });
-
-        } catch (error) {
-            console.error(error);
-            document.getElementById('import-excel').value = ""; 
-            window.openModal({type: 'error', title: 'Format Salah', message: 'Gagal memproses file Excel. Pastikan format tabel sesuai hasil Export.'});
-        }
-    };
-    reader.readAsArrayBuffer(file);
-};
-
-window.openModal = function(options) {
-    const modal = document.getElementById('custom-modal');
-    const { type = 'info', title, message, onConfirm = null } = options;
-    document.getElementById('modal-title').innerText = title;
-    document.getElementById('modal-message').innerText = message;
-    
-    const actions = document.getElementById('modal-actions');
-    actions.innerHTML = '';
-    
-    if (type === 'confirm') {
-        const btnCancel = document.createElement('button');
-        btnCancel.className = 'px-6 py-2 bg-gray-200 text-gray-800 rounded-lg';
-        btnCancel.innerText = 'Batal';
-        btnCancel.onclick = window.closeModal;
-        
-        const btnConfirm = document.createElement('button');
-        btnConfirm.className = 'px-6 py-2 bg-red-600 text-white rounded-lg';
-        btnConfirm.innerText = 'Ya, Lanjutkan';
-        btnConfirm.onclick = () => { window.closeModal(); if(onConfirm) onConfirm(); };
-        
-        actions.appendChild(btnCancel);
-        actions.appendChild(btnConfirm);
-    } else {
-        const btn = document.createElement('button');
-        btn.className = 'px-6 py-2 bg-brand-green1 text-white rounded-lg';
-        btn.innerText = 'OK';
-        btn.onclick = window.closeModal;
-        actions.appendChild(btn);
-    }
-
-    modal.classList.remove('hidden', 'opacity-0');
-};
-
-window.closeModal = function() {
-    const modal = document.getElementById('custom-modal');
-    modal.classList.add('opacity-0');
-    setTimeout(() => modal.classList.add('hidden'), 300);
-};
-
-// --- Logika Toggle Password (Tampil/Sembunyi) ---
-window.togglePassword = function(inputId, iconId) {
-    const inputField = document.getElementById(inputId);
-    const icon = document.getElementById(iconId);
-    
-    if (!inputField || !icon) return;
-
-    if (inputField.type === "password") {
-        inputField.type = "text";
-        icon.classList.remove("fa-eye-slash");
-        icon.classList.add("fa-eye");
-    } else {
-        inputField.type = "password";
-        icon.classList.remove("fa-eye");
-        icon.classList.add("fa-eye-slash");
-    }
-};
-
-window.updateDashboard = function() {
-    const total = appData.voters.length;
-    const males = appData.voters.filter(v => v.gender === 'Laki-laki').length;
-    const females = appData.voters.filter(v => v.gender === 'Perempuan').length;
-
-    document.getElementById('stat-total').innerText = total.toLocaleString('id-ID');
-    document.getElementById('stat-male').innerText = males.toLocaleString('id-ID');
-    document.getElementById('stat-female').innerText = females.toLocaleString('id-ID');
-
-    // Persentase Progres Utama
-    const percentage = appData.dptTotal > 0 ? ((total / appData.dptTotal) * 100).toFixed(1) : 0;
-    document.getElementById('progress-text').innerText = `${percentage}%`;
-    document.getElementById('progress-bar').style.width = `${Math.min(percentage, 100)}%`;
-
-    // Update Target DPT Laki-laki & Perempuan di bawah Progres Kemenangan
-    const elTargetLk = document.getElementById('text-target-lk');
-    const elTargetPr = document.getElementById('text-target-pr');
-    const elPctLk = document.getElementById('percent-target-lk');
-    const elPctPr = document.getElementById('percent-target-pr');
-
-    if (elTargetLk) elTargetLk.innerText = (appData.targetLk || 0).toLocaleString('id-ID');
-    if (elTargetPr) elTargetPr.innerText = (appData.targetPr || 0).toLocaleString('id-ID');
-
-    const pctMale = appData.targetLk > 0 ? ((males / appData.targetLk) * 100).toFixed(1) : 0;
-    const pctFemale = appData.targetPr > 0 ? ((females / appData.targetPr) * 100).toFixed(1) : 0;
-
-    if (elPctLk) elPctLk.innerText = `${pctMale}%`;
-    if (elPctPr) elPctPr.innerText = `${pctFemale}%`;
-
-    // Animasi Progress Bar Laki-laki & Perempuan
-    const pBarLk = document.getElementById('progress-bar-lk');
-    const pBarPr = document.getElementById('progress-bar-pr');
-    
-    if (pBarLk) pBarLk.style.width = `${Math.min(pctMale, 100)}%`;
-    if (pBarPr) pBarPr.style.width = `${Math.min(pctFemale, 100)}%`;
-
-    // Update Chart Alamat
-    const dusunLabels = ['Dusun 1', 'Dusun 2', 'Dusun 3', 'Dusun 4', 'Dusun 5', 'Dusun 6', 'Dusun 7', 'Dusun 8'];
-    const addressCounts = new Array(8).fill(0);
-    
-    appData.voters.forEach(v => {
-        const index = dusunLabels.indexOf(v.address);
-        if (index !== -1) addressCounts[index]++;
-    });
-
-    const ctxAddress = document.getElementById('addressChart');
-    if (ctxAddress) {
-        if (addressChartInstance) {
-            addressChartInstance.data.datasets[0].data = addressCounts;
-            addressChartInstance.update();
-        } else {
-            addressChartInstance = new Chart(ctxAddress.getContext('2d'), {
-                type: 'bar',
-                data: {
-                    labels: dusunLabels,
-                    datasets: [{
-                        label: 'Jumlah Pemilih',
-                        data: addressCounts,
-                        backgroundColor: '#2F6B3F',
-                        borderColor: '#0B3D2E',
-                        borderWidth: 1,
-                        borderRadius: 4
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
-            });
-        }
-    }
-    
-    // Hapus kode genderChartInstance karena elemen canvas-nya sudah dihapus
-};
-
-window.renderTable = function() {
-    const tableBody = document.getElementById('voter-table-body');
-    const emptyState = document.getElementById('empty-state');
-    tableBody.innerHTML = '';
-    
-    const elNama = document.getElementById('filter-nama');
-    const elAlamat = document.getElementById('filter-alamat');
-    const elJk = document.getElementById('filter-jk');
-    
-    const valNama = elNama ? elNama.value.trim().toLowerCase() : '';
-    const valAlamat = elAlamat ? elAlamat.value : 'semua';
-    const valJk = elJk ? elJk.value : 'semua';
-
-    const filteredVoters = appData.voters.filter(voter => {
-        const matchNama = valNama === '' || voter.name.toLowerCase().includes(valNama);
-        const matchAlamat = (valAlamat === 'semua') || (voter.address === valAlamat);
-        const matchJk = (valJk === 'semua') || (voter.gender === valJk);
-        return matchNama && matchAlamat && matchJk;
-    });
-    
-    if (filteredVoters.length === 0) {
-        emptyState.classList.remove('hidden');
-        return;
-    }
-    emptyState.classList.add('hidden');
-    
-    filteredVoters.forEach((voter, index) => {
-        const dateObj = new Date(voter.timestamp);
-        const timeStr = dateObj.toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'});
-        const dateStr = dateObj.toLocaleDateString('id-ID', {day: 'numeric', month: 'short'});
-        
-        // Ambil role pengguna saat ini
-        const role = sessionStorage.getItem('sessionRole');
-        
-        // Render sel kolom aksi KECUALI untuk role viewer
-        let actionColumnHTML = '';
-        if (role !== 'viewer') {
-            actionColumnHTML = `
-            <td class="p-3 text-center">
-                <div class="flex items-center justify-center gap-2">
-                    <button onclick="window.editVoter('${voter.id}')" class="text-blue-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors" title="Edit Data">
-                        <i class="fa-solid fa-pen-to-square"></i>
-                    </button>
-                    <button onclick="window.deleteVoter('${voter.id}')" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded transition-colors" title="Hapus Data">
-                        <i class="fa-solid fa-trash"></i>
-                    </button>
+            <div class="text-center mb-8">
+                <!-- Ikon Bawaan (Akan disembunyikan via JS jika logo custom ada) -->
+                <div id="default-logo" class="w-20 h-20 bg-brand-green2 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-3xl shadow-lg border-4 border-brand-yellow">
+                    <i class="fa-solid fa-shield-halved"></i>
                 </div>
-            </td>`;
-        }
+                <!-- Logo Custom (Lebar 50%, tinggi proporsional otomatis) -->
+                <img id="custom-logo" src="" alt="Logo Instansi" class="hidden w-3/4 h-auto mx-auto mb-4 object-contain">
+                
+                <p class="text-sm text-gray-500 mt-1">BIDANG RISET DAN DATA STRATEGIS</p>
+            </div>
 
-        const tr = document.createElement('tr');
-        tr.className = "border-b hover:bg-brand-offwhite/50 transition-colors";
-        tr.innerHTML = `
-            <td class="p-3 text-center text-gray-500">${index + 1}</td>
-            <td class="p-3 font-semibold uppercase">${voter.name}</td>
-            <td class="p-3"><span class="bg-gray-100 px-2 py-1 rounded text-xs border">${voter.address}</span></td>
-            <td class="p-3">${voter.gender === 'Laki-laki' ? '<span class="text-blue-600"><i class="fa-solid fa-mars mr-1"></i> Laki-laki</span>' : '<span class="text-pink-600"><i class="fa-solid fa-venus mr-1"></i> Perempuan</span>'}</td>
-            <td class="p-3 text-center text-xs text-gray-500">${dateStr} ${timeStr}</td>
-            ${actionColumnHTML}
-        `;
-        tableBody.appendChild(tr);
-    });
-};
+            <form id="login-form" class="space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-brand-green2 mb-1" for="username">Username</label>
+                    <input type="text" id="username" required placeholder="Masukkan username..." 
+                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-brand-green2 mb-1" for="password">Kata Sandi</label>
+                    <div class="relative">
+                        <!-- Tambahkan padding kanan (pr-12) agar teks tidak tertutup ikon -->
+                        <input type="password" id="password" required placeholder="Masukkan kata sandi..." 
+                            class="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none">
+                        <!-- Tombol Mata -->
+                        <button type="button" onclick="window.togglePassword('password', 'eye-login')" class="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-brand-green2 transition-colors focus:outline-none">
+                            <i id="eye-login" class="fa-solid fa-eye-slash"></i>
+                        </button>
+                    </div>
+                </div>
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors mt-6 flex items-center justify-center">
+                    <i class="fa-solid fa-right-to-bracket mr-2"></i> LOG IN
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Custom Modal (Replacing Alert/Confirm) -->
+
+    <div id="custom-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform scale-95 transition-transform duration-300 overflow-hidden" id="modal-content">
+            <div class="p-6">
+                <div class="flex items-center justify-center w-12 h-12 rounded-full mb-4 mx-auto" id="modal-icon-container">
+                    <i id="modal-icon" class="text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-bold text-center text-gray-900 mb-2" id="modal-title">Perhatian</h3>
+                <p class="text-center text-gray-600 mb-6" id="modal-message">Pesan disini</p>
+                <div class="flex justify-center gap-3" id="modal-actions">
+                    <!-- Buttons injected via JS -->
+                </div>
+            </div>
+            <div class="h-2 w-full bg-brand-green1" id="modal-accent"></div>
+        </div>
+    </div>
+
+    <!-- Modal Edit Data Pemilih -->
+    <div id="edit-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 hidden opacity-0 transition-opacity duration-300">
+        <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 transform scale-95 transition-transform duration-300 overflow-hidden">
+            <div class="p-6">
+                <h3 class="text-xl font-bold text-brand-green2 mb-4 border-b pb-2"><i class="fa-solid fa-pen-to-square mr-2"></i>Edit Data Pemilih</h3>
+                <form id="edit-voter-form" class="space-y-4">
+                    <input type="hidden" id="edit-id">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Nama Lengkap</label>
+                        <input type="text" id="edit-nama" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Alamat (Dusun)</label>
+                        <select id="edit-alamat" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none bg-white">
+                            <option value="Dusun 1">Dusun 1</option>
+                            <option value="Dusun 2">Dusun 2</option>
+                            <option value="Dusun 3">Dusun 3</option>
+                            <option value="Dusun 4">Dusun 4</option>
+                            <option value="Dusun 5">Dusun 5</option>
+                            <option value="Dusun 6">Dusun 6</option>
+                            <option value="Dusun 7">Dusun 7</option>
+                            <option value="Dusun 8">Dusun 8</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Jenis Kelamin</label>
+                        <select id="edit-jk" required class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none bg-white">
+                            <option value="Laki-laki">Laki-laki</option>
+                            <option value="Perempuan">Perempuan</option>
+                        </select>
+                    </div>
+                    <div class="flex justify-end gap-3 mt-6 border-t pt-4">
+                        <button type="button" onclick="window.closeEditModal()" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition-colors">Batal</button>
+                        <button type="submit" class="px-4 py-2 bg-brand-green1 text-white rounded-lg hover:bg-brand-green2 transition-colors">Simpan Perubahan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN VIEW ==================== -->
+    <div id="main-view" class="hidden min-h-screen p-4 sm:p-8">
+        
+        <!-- Header -->
+        <header class="glass-panel rounded-2xl p-6 mb-8 flex flex-col md:flex-row justify-between items-center border-l-8 border-l-brand-yellow">
+            <div class="flex items-center gap-4 mb-4 md:mb-0">
+                
+                <!-- TAMBAHAN: Tombol Upload Foto Calon -->
+                <label for="upload-foto" id="wadah-foto-calon" class="bg-brand-green2 text-brand-yellow w-16 h-16 rounded-full flex items-center justify-center text-2xl font-black shadow-inner border-2 border-brand-green1 cursor-pointer hover:opacity-80 transition-all bg-cover bg-center overflow-hidden flex-shrink-0 relative group" title="Klik untuk ubah foto calon">
+                    <span id="teks-04" class="absolute z-10">04</span>
+                    <!-- Ikon kamera muncul saat di-hover -->
+                    <div class="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center z-20">
+                        <i class="fa-solid fa-camera text-white text-lg"></i>
+                    </div>
+                    <input type="file" id="upload-foto" accept="image/*" class="hidden" onchange="handleFotoCalon(event)">
+                </label>
+                <!-- AKHIR TAMBAHAN -->
+
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-brand-green2 tracking-tight">TIKA LIYANA, M.Kom.</h1>
+                    <p class="text-brand-green1 font-medium">Calon Kepala Kampung Nomor Urut 04</p>
+                </div>
+            </div>
+            
+            <div class="flex gap-3">
+                <!-- TAMBAHAN: Tombol Import Excel -->
+                <input type="file" id="import-excel" accept=".xlsx, .xls" class="hidden" onchange="window.importData(event)">
+                <label id="btn-import-label" for="import-excel" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors text-sm flex items-center cursor-pointer" title="Import Data dari Excel">
+                    <i class="fa-solid fa-file-import mr-2"></i> Import Excel
+                </label>
+
+                <button id="btn-export" onclick="window.exportData()" class="bg-brand-yellow hover:bg-brand-olive text-brand-green2 hover:text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors text-sm flex items-center">
+                    <i class="fa-solid fa-file-excel mr-2"></i> Export Excel
+                </button>
+                <button onclick="window.logoutAdmin()" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors text-sm flex items-center">
+                    <i class="fa-solid fa-sign-out-alt mr-2"></i> Keluar
+                </button>
+            </div>
+        </header>
+
+        <!-- Tabs Navigation (Navbar) -->
+        <div class="flex flex-wrap gap-2 mb-6 border-b-2 border-gray-200 pb-1">
+            <button onclick="switchTab('tab-akun')" id="btn-tab-akun" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">KELOLA AKUN</button>
+            <button onclick="switchTab('tab-pengaturan')" id="btn-tab-pengaturan" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">PENGATURAN</button>
+            <button onclick="switchTab('tab-input')" id="btn-tab-input" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">INPUT DATA</button>
+            <button onclick="switchTab('tab-hasil')" id="btn-tab-hasil" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">HASIL PERHITUNGAN</button>
+            <button onclick="switchTab('tab-tabel')" id="btn-tab-tabel" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">DATA PEMILIH 04</button>
+        </div>
+
+        <!-- TAB 0: Kelola Akun (Khusus Admin) -->
+        <div id="tab-akun" class="hidden space-y-6">
+            <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-brand-green2">
+                <h2 class="text-xl font-bold text-brand-green2 mb-6 border-b pb-2"><i class="fa-solid fa-user-shield mr-2 text-brand-yellow"></i> BUAT AKUN RELAWAN</h2>
+                <form id="user-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Nama Relawan</label>
+                        <input type="text" id="new-nama-user" required placeholder="Contoh: Budi" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Username</label>
+                        <input type="text" id="new-username" required placeholder="budi123" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+                        <div class="relative">
+                            <input type="password" id="new-password" required placeholder="sandi123" class="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none">
+                            <button type="button" onclick="window.togglePassword('new-password', 'eye-admin')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-brand-green2 transition-colors focus:outline-none">
+                                <i id="eye-admin" class="fa-solid fa-eye-slash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="md:col-span-3 flex justify-end">
+                        <button type="submit" class="bg-brand-green2 hover:bg-brand-green1 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-colors flex items-center">
+                            <i class="fa-solid fa-plus mr-2"></i> Buat Akun
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="font-bold text-lg text-brand-green2 mb-4 border-b pb-2">DAFTAR AKUN RELAWAN</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 text-gray-600 text-sm border-b">
+                                <th class="p-3 font-semibold">Nama Relawan</th>
+                                <th class="p-3 font-semibold">Username</th>
+                                <th class="p-3 font-semibold text-center">Total Input Data</th>
+                                <th class="p-3 font-semibold text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-table-body" class="text-sm">
+                            <!-- Injected via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB: Pengaturan (Khusus Admin) -->
+        <div id="tab-pengaturan" class="hidden max-w-2xl mx-auto w-full">
+            <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-brand-green1">
+                <h2 class="text-xl font-bold text-brand-green2 mb-6 border-b pb-2"><i class="fa-solid fa-cogs mr-2 text-brand-yellow"></i> PEGATURAN SISTEM</h2>
+                <form id="pengaturan-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1" for="edit-dpt-input">Target Daftar Pemilih Tetap (DPT)</label>
+                        <input type="number" id="edit-dpt-input" required min="1" placeholder="Contoh: 5000" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none transition-all" oninput="hitungTargetPerempuan()">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1" for="edit-target-lk">Target Laki-laki</label>
+                            <input type="number" id="edit-target-lk" required min="0" placeholder="0" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none transition-all" oninput="hitungTargetPerempuan()">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1" for="edit-target-pr">Target Perempuan</label>
+                            <input type="number" id="edit-target-pr" readonly placeholder="0" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 bg-gray-100 text-gray-500 outline-none cursor-not-allowed">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1" for="edit-bg-input">Background Aplikasi (Opsional)</label>
+                        <p class="text-xs text-gray-500 mb-2">Biarkan kosong jika tidak ingin mengubah background saat ini.</p>
+                        <input type="file" id="edit-bg-input" accept="image/*" class="w-full text-sm border border-gray-300 rounded-lg p-2 bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1" for="edit-logo-input">Logo Halaman Login (Opsional)</label>
+                        <p class="text-xs text-gray-500 mb-2">Hanya Admin. Lebar akan disesuaikan 50% kolom. Kosongkan jika tidak diganti.</p>
+                        <input type="file" id="edit-logo-input" accept="image/*" class="w-full text-sm border border-gray-300 rounded-lg p-2 bg-white">
+                    </div>
+                    <button type="submit" class="w-full bg-brand-green2 hover:bg-brand-green1 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors mt-4 flex items-center justify-center">
+                        <i class="fa-solid fa-save mr-2"></i> Simpan Pengaturan
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB 1: Input Form -->
+        <div id="tab-input" class="block max-w-2xl mx-auto w-full">
+            <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-brand-green1">
+                <h2 class="text-xl font-bold text-brand-green2 mb-6 border-b pb-2"><i class="fa-solid fa-user-plus mr-2 text-brand-yellow"></i> Input Data Pemilih</h2>
+                <form id="voter-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1" for="nama">Nama Lengkap</label>
+                        <input type="text" id="nama" required placeholder="Contoh: Ahmad Subagyo" class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 focus:border-transparent outline-none transition-all uppercase">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1" for="alamat">Alamat (Dusun)</label>
+                        <select id="alamat" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 focus:border-transparent outline-none transition-all bg-white cursor-pointer">
+                            <option value="" disabled selected>Pilih Dusun...</option>
+                            <option value="Dusun 1">Dusun 1</option>
+                            <option value="Dusun 2">Dusun 2</option>
+                            <option value="Dusun 3">Dusun 3</option>
+                            <option value="Dusun 4">Dusun 4</option>
+                            <option value="Dusun 5">Dusun 5</option>
+                            <option value="Dusun 6">Dusun 6</option>
+                            <option value="Dusun 7">Dusun 7</option>
+                            <option value="Dusun 8">Dusun 8</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1" for="jk">Jenis Kelamin</label>
+                        <select id="jk" required class="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 focus:border-transparent outline-none transition-all bg-white cursor-pointer">
+                            <option value="" disabled selected>Pilih Jenis Kelamin...</option>
+                            <option value="Laki-laki">Laki-laki</option>
+                            <option value="Perempuan">Perempuan</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-brand-green2 hover:bg-brand-green1 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors duration-200 mt-4 flex items-center justify-center">
+                        <i class="fa-solid fa-plus-circle mr-2"></i> Tambah Data
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- TAB 2: Dashboard & Stats -->
+        <div id="tab-hasil" class="hidden space-y-8">
+            <!-- Top Stats Row -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="glass-panel rounded-xl p-5 flex items-center border-b-4 border-brand-green1">
+                    <div class="p-3 bg-brand-offwhite rounded-lg text-brand-green1 mr-4"><i class="fa-solid fa-users text-2xl"></i></div>
+                    <div>
+                        <p class="text-sm text-gray-500 font-semibold uppercase">Total Pemilih 04</p>
+                        <p class="text-3xl font-black text-brand-green2" id="stat-total">0</p>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-xl p-5 flex items-center border-b-4 border-blue-500">
+                    <div class="p-3 bg-blue-50 rounded-lg text-blue-500 mr-4"><i class="fa-solid fa-mars text-2xl"></i></div>
+                    <div>
+                        <p class="text-sm text-gray-500 font-semibold uppercase">Laki-laki</p>
+                        <p class="text-3xl font-black text-gray-800" id="stat-male">0</p>
+                    </div>
+                </div>
+                <div class="glass-panel rounded-xl p-5 flex items-center border-b-4 border-pink-500">
+                    <div class="p-3 bg-pink-50 rounded-lg text-pink-500 mr-4"><i class="fa-solid fa-venus text-2xl"></i></div>
+                    <div>
+                        <p class="text-sm text-gray-500 font-semibold uppercase">Perempuan</p>
+                        <p class="text-3xl font-black text-gray-800" id="stat-female">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bars (3 Kolom) -->
+            <div class="glass-panel rounded-xl p-6">
+                <h3 class="font-bold text-gray-800 mb-4 border-b pb-2"><i class="fa-solid fa-chart-pie mr-2 text-brand-green1"></i> PROGRES KEMENANGAN</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Global -->
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <div>
+                                <p class="text-sm font-bold text-gray-700">Total Global</p>
+                                <p class="text-xs text-gray-500">Jumlah: <span id="text-dpt" class="font-semibold text-brand-green2">0</span></p>
+                            </div>
+                            <span id="progress-text" class="text-xl font-black text-brand-green1">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                            <div id="progress-bar" class="bg-gradient-to-r from-brand-yellow to-brand-green1 h-3 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Laki-laki -->
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <div>
+                                <p class="text-sm font-bold text-gray-700">Laki-laki</p>
+                                <p class="text-xs text-gray-500">Jumlah: <span id="text-target-lk" class="font-semibold text-blue-600">0</span></p>
+                            </div>
+                            <span id="percent-target-lk" class="text-xl font-black text-blue-500">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                            <div id="progress-bar-lk" class="bg-blue-400 h-3 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Perempuan -->
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <div>
+                                <p class="text-sm font-bold text-gray-700">Perempuan</p>
+                                <p class="text-xs text-gray-500">Jumlah: <span id="text-target-pr" class="font-semibold text-pink-600">0</span></p>
+                            </div>
+                            <span id="percent-target-pr" class="text-xl font-black text-pink-500">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                            <div id="progress-bar-pr" class="bg-pink-400 h-3 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 gap-6">
+                <div class="glass-panel rounded-xl p-6">
+                    <h3 class="font-bold text-gray-800 mb-4 text-center">STATISTIK PER DUSUN</h3>
+                    <div class="relative h-64 w-full"><canvas id="addressChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: Data Table -->
+        <div id="tab-tabel" class="hidden glass-panel rounded-2xl p-6 border-t-4 border-t-brand-green1">
+            <div class="flex justify-between items-center mb-4 border-b pb-3">
+                <h3 class="font-bold text-lg text-brand-green2"><i class="fa-solid fa-list mr-2"></i> DATA PEMILIH 04</h3>
+            </div>
+            
+            <!-- Filters -->
+            <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                <!-- TAMBAHAN: Input Filter Nama -->
+                <div class="relative w-full sm:w-64">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                    </span>
+                    <input type="text" id="filter-nama" oninput="renderTable()" placeholder="Cari nama pemilih..." 
+                        class="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white text-gray-700 uppercase">
+                </div>
+                
+                <select id="filter-alamat" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
+                    <option value="semua">Semua Alamat</option>
+                    <option value="Dusun 1">Dusun 1</option>
+                    <option value="Dusun 2">Dusun 2</option>
+                    <option value="Dusun 3">Dusun 3</option>
+                    <option value="Dusun 4">Dusun 4</option>
+                    <option value="Dusun 5">Dusun 5</option>
+                    <option value="Dusun 6">Dusun 6</option>
+                    <option value="Dusun 7">Dusun 7</option>
+                    <option value="Dusun 8">Dusun 8</option>
+                </select>
+                <select id="filter-jk" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
+                    <option value="semua">Semua Jenis Kelamin</option>
+                    <option value="Laki-laki">Laki-laki</option>
+                    <option value="Perempuan">Perempuan</option>
+                </select>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 text-gray-600 text-sm border-b">
+                            <th class="p-3 font-semibold w-12 text-center">No</th>
+                            <th class="p-3 font-semibold">Nama Lengkap</th>
+                            <th class="p-3 font-semibold">Alamat</th>
+                            <th class="p-3 font-semibold">Jenis Kelamin</th>
+                            <th class="p-3 font-semibold text-center">Waktu Input</th>
+                            <!-- TAMBAHAN ID UNTUK HEADER AKSI -->
+                            <th class="p-3 font-semibold text-center" id="th-aksi">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="voter-table-body" class="text-sm">
+                        <!-- Rows injected via JS -->
+                    </tbody>
+                </table>
+                <div id="empty-state" class="text-center py-8 text-gray-500 hidden">
+                    <i class="fa-regular fa-folder-open text-4xl mb-3 text-gray-300"></i>
+                    <p>Belum ada data pemilih yang diinput.</p>
+                </div>
+            </div>
+        </div>
+        
+        <footer class="mt-8 text-center text-sm text-gray-500 pb-4 flex justify-center items-center gap-3">
+            <span>&copy; PAWON GAGASAN | BIDANG RISET DAN DATA STRATEGIS</span>
+            <!-- Tombol Reset Disembunyikan -->
+            <button onclick="window.confirmReset()" class="text-gray-300 hover:text-red-500 transition-colors" title="Reset Data">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </button>
+        </footer>
+    </div>
+
+    <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+    <script type="module" src="script.js">
+
+    </script>
+
+</body>
+</html>
