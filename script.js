@@ -20,12 +20,10 @@ let addressChartInstance = null;
 let genderChartInstance = null;
 
 const bgLayer = document.getElementById('bg-layer');
-const adminForm = document.getElementById('admin-form');
 const voterForm = document.getElementById('voter-form');
 
 // View Elements
 const loginView = document.getElementById('login-view');
-const adminView = document.getElementById('admin-view');
 const mainView = document.getElementById('main-view');
 
 // --- Logika Login/Autentikasi ---
@@ -276,6 +274,61 @@ window.deleteVoter = function(id) {
     });
 };
 
+// --- Logika Edit Data Pemilih ---
+window.editVoter = function(id) {
+    // Cari data berdasarkan ID
+    const voter = appData.voters.find(v => v.id === id);
+    if (!voter) return;
+    
+    // Isi nilai ke dalam form modal edit
+    document.getElementById('edit-id').value = voter.id;
+    document.getElementById('edit-nama').value = voter.name;
+    document.getElementById('edit-alamat').value = voter.address;
+    document.getElementById('edit-jk').value = voter.gender;
+    
+    // Tampilkan modal
+    const modal = document.getElementById('edit-modal');
+    modal.classList.remove('hidden', 'opacity-0');
+};
+
+window.closeEditModal = function() {
+    const modal = document.getElementById('edit-modal');
+    modal.classList.add('opacity-0');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+};
+
+const editVoterForm = document.getElementById('edit-voter-form');
+if (editVoterForm) {
+    editVoterForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const id = document.getElementById('edit-id').value;
+        const nama = document.getElementById('edit-nama').value.trim();
+        const alamat = document.getElementById('edit-alamat').value;
+        const jk = document.getElementById('edit-jk').value;
+        
+        // Cek duplikat data (kecuali dirinya sendiri yang sedang diedit)
+        const normalizedName = nama.toLowerCase().replace(/\s+/g, ' ');
+        const isDuplicate = appData.voters.some(v => v.id !== id && v.name.toLowerCase().replace(/\s+/g, ' ') === normalizedName);
+        if (isDuplicate) {
+            window.openModal({ type: 'error', title: 'Data Ganda!', message: `Nama "${nama}" sudah terdaftar di sistem.` });
+            return;
+        }
+
+        // Update data ke Firebase
+        update(ref(db, 'voters/' + id), {
+            name: nama,
+            address: alamat,
+            gender: jk
+            // timestamp dan inputBy tidak diubah agar riwayat aslinya tetap terjaga
+        }).then(() => {
+            window.closeEditModal();
+            window.openModal({ type: 'success', title: 'Berhasil', message: 'Data pemilih berhasil diperbarui.' });
+        }).catch((error) => {
+            window.openModal({ type: 'error', title: 'Gagal', message: 'Gagal memperbarui data. Periksa koneksi internet.' });
+        });
+    });
+}
+
 window.confirmReset = function() {
     window.openModal({
         type: 'confirm', title: 'Reset Data Pemilih?', message: 'Data pemilih akan dihapus dari server. (Foto calon dipertahankan)',
@@ -496,7 +549,16 @@ window.renderTable = function() {
             <td class="p-3"><span class="bg-gray-100 px-2 py-1 rounded text-xs border">${voter.address}</span></td>
             <td class="p-3">${voter.gender === 'Laki-laki' ? '<span class="text-blue-600"><i class="fa-solid fa-mars mr-1"></i> Laki-laki</span>' : '<span class="text-pink-600"><i class="fa-solid fa-venus mr-1"></i> Perempuan</span>'}</td>
             <td class="p-3 text-center text-xs text-gray-500">${dateStr} ${timeStr}</td>
-            <td class="p-3 text-center"><button onclick="window.deleteVoter('${voter.id}')" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded transition-colors"><i class="fa-solid fa-trash"></i></button></td>
+            <td class="p-3 text-center">
+                <div class="flex items-center justify-center gap-2">
+                    <button onclick="window.editVoter('${voter.id}')" class="text-blue-400 hover:text-blue-600 hover:bg-blue-50 p-2 rounded transition-colors" title="Edit Data">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                    <button onclick="window.deleteVoter('${voter.id}')" class="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded transition-colors" title="Hapus Data">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </div>
+            </td>
         `;
         tableBody.appendChild(tr);
     });
