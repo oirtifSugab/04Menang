@@ -295,22 +295,41 @@ window.confirmReset = function() {
     });
 };
 
-// Update switchTab agar mendukung tab-akun
+// Update switchTab agar lebih aman dan tidak menghapus class 'hidden'
 window.switchTab = function(targetTab) {
+    const role = sessionStorage.getItem('sessionRole');
+    
+    // 1. Keamanan Ekstra: Blokir paksa jika Relawan/User mencoba akses tab Kelola Akun
+    if (targetTab === 'tab-akun' && role !== 'admin') {
+        console.warn("Akses ditolak: Hanya Admin.");
+        return;
+    }
+
+    // 2. Sembunyikan semua konten tab
     document.getElementById('tab-akun').classList.add('hidden');
     document.getElementById('tab-input').classList.add('hidden');
     document.getElementById('tab-hasil').classList.add('hidden');
     document.getElementById('tab-tabel').classList.add('hidden');
     
-    const defaultBtnClass = "px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300";
-    if(document.getElementById('btn-tab-akun')) document.getElementById('btn-tab-akun').className = defaultBtnClass;
-    if(document.getElementById('btn-tab-input')) document.getElementById('btn-tab-input').className = defaultBtnClass;
-    if(document.getElementById('btn-tab-hasil')) document.getElementById('btn-tab-hasil').className = defaultBtnClass;
-    if(document.getElementById('btn-tab-tabel')) document.getElementById('btn-tab-tabel').className = defaultBtnClass;
+    // 3. Reset warna tombol ke default TANPA menghapus class 'hidden'
+    const buttons = ['btn-tab-akun', 'btn-tab-input', 'btn-tab-hasil', 'btn-tab-tabel'];
+    buttons.forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if(btn) {
+            btn.classList.remove('bg-brand-green1', 'text-white'); // Hapus warna aktif
+            btn.classList.add('bg-gray-200', 'text-gray-600', 'hover:bg-gray-300'); // Tambah warna pasif
+        }
+    });
 
+    // 4. Tampilkan konten tab yang dipilih
     document.getElementById(targetTab).classList.remove('hidden');
-    const activeBtnClass = "px-6 py-3 font-bold rounded-t-xl transition-colors bg-brand-green1 text-white";
-    document.getElementById(`btn-${targetTab}`).className = activeBtnClass;
+    
+    // 5. Beri warna aktif khusus pada tombol yang dipilih
+    const activeBtn = document.getElementById(`btn-${targetTab}`);
+    if(activeBtn) {
+        activeBtn.classList.remove('bg-gray-200', 'text-gray-600', 'hover:bg-gray-300');
+        activeBtn.classList.add('bg-brand-green1', 'text-white');
+    }
 };
 
 window.exportData = function() {
