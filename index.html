@@ -50,29 +50,40 @@
     <!-- ==================== LOGIN VIEW ==================== -->
     <div id="login-view" class="min-h-screen flex items-center justify-center p-4">
         <div class="glass-panel w-full max-w-md rounded-2xl p-8 relative overflow-hidden">
-            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand-yellow via-brand-green1 to-brand-green2"></div>
+            <!-- Outline diubah menjadi Gold ke Merah -->
+            <div class="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-500 via-red-600 to-red-700"></div>
             
             <div class="text-center mb-8">
-                <div class="w-20 h-20 bg-brand-green2 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-3xl shadow-lg border-4 border-brand-yellow">
+                <!-- Ikon Bawaan (Akan disembunyikan via JS jika logo custom ada) -->
+                <div id="default-logo" class="w-20 h-20 bg-brand-green2 rounded-full flex items-center justify-center mx-auto mb-4 text-white text-3xl shadow-lg border-4 border-brand-yellow">
                     <i class="fa-solid fa-shield-halved"></i>
                 </div>
-                <h1 class="text-2xl font-bold text-brand-green2">Keamanan Sistem</h1>
-                <p class="text-sm text-gray-500 mt-1">Masuk sebagai Admin untuk mengelola akun</p>
+                <!-- Logo Custom (Lebar 50%, tinggi proporsional otomatis) -->
+                <img id="custom-logo" src="" alt="Logo Instansi" class="hidden w-3/4 h-auto mx-auto mb-4 object-contain">
+                
+                <p class="text-sm text-gray-500 mt-1">BIDANG RISET DAN DATA STRATEGIS</p>
             </div>
 
             <form id="login-form" class="space-y-5">
                 <div>
-                    <label class="block text-sm font-semibold text-brand-green2 mb-1" for="username">Username Admin</label>
+                    <label class="block text-sm font-semibold text-brand-green2 mb-1" for="username">Username</label>
                     <input type="text" id="username" required placeholder="Masukkan username..." 
                         class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-brand-green2 mb-1" for="password">Kata Sandi</label>
-                    <input type="password" id="password" required placeholder="Masukkan kata sandi..." 
-                        class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none">
+                    <div class="relative">
+                        <!-- Tambahkan padding kanan (pr-12) agar teks tidak tertutup ikon -->
+                        <input type="password" id="password" required placeholder="Masukkan kata sandi..." 
+                            class="w-full px-4 py-3 pr-12 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none">
+                        <!-- Tombol Mata -->
+                        <button type="button" onclick="window.togglePassword('password', 'eye-login')" class="absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-brand-green2 transition-colors focus:outline-none">
+                            <i id="eye-login" class="fa-solid fa-eye-slash"></i>
+                        </button>
+                    </div>
                 </div>
-                <button type="submit" class="w-full bg-brand-green1 hover:bg-brand-green2 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors mt-6 flex items-center justify-center">
-                    <i class="fa-solid fa-right-to-bracket mr-2"></i> Akses Sistem
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors mt-6 flex items-center justify-center">
+                    <i class="fa-solid fa-right-to-bracket mr-2"></i> LOG IN
                 </button>
             </form>
         </div>
@@ -178,17 +189,17 @@
 
         <!-- Tabs Navigation (Navbar) -->
         <div class="flex flex-wrap gap-2 mb-6 border-b-2 border-gray-200 pb-1">
-            <button onclick="switchTab('tab-akun')" id="btn-tab-akun" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">Kelola Akun</button>
-            <button onclick="switchTab('tab-pengaturan')" id="btn-tab-pengaturan" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">Target DPT</button>
-            <button onclick="switchTab('tab-input')" id="btn-tab-input" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">Input Data</button>
-            <button onclick="switchTab('tab-hasil')" id="btn-tab-hasil" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">Hasil Perhitungan</button>
-            <button onclick="switchTab('tab-tabel')" id="btn-tab-tabel" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">Data Pemilih</button>
+            <button onclick="switchTab('tab-akun')" id="btn-tab-akun" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">KELOLA AKUN</button>
+            <button onclick="switchTab('tab-pengaturan')" id="btn-tab-pengaturan" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">PENGATURAN</button>
+            <button onclick="switchTab('tab-input')" id="btn-tab-input" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">INPUT DATA</button>
+            <button onclick="switchTab('tab-hasil')" id="btn-tab-hasil" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">HASIL PERHITUNGAN</button>
+            <button onclick="switchTab('tab-tabel')" id="btn-tab-tabel" class="hidden px-6 py-3 font-bold rounded-t-xl transition-colors bg-gray-200 text-gray-600 hover:bg-gray-300">DATA PEMILIH 04</button>
         </div>
 
         <!-- TAB 0: Kelola Akun (Khusus Admin) -->
         <div id="tab-akun" class="hidden space-y-6">
             <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-brand-green2">
-                <h2 class="text-xl font-bold text-brand-green2 mb-6 border-b pb-2"><i class="fa-solid fa-user-shield mr-2 text-brand-yellow"></i> Buat Akun Relawan</h2>
+                <h2 class="text-xl font-bold text-brand-green2 mb-6 border-b pb-2"><i class="fa-solid fa-user-shield mr-2 text-brand-yellow"></i> BUAT AKUN RELAWAN</h2>
                 <form id="user-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Nama Relawan</label>
@@ -200,7 +211,12 @@
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Password</label>
-                        <input type="text" id="new-password" required placeholder="sandi123" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none">
+                        <div class="relative">
+                            <input type="password" id="new-password" required placeholder="sandi123" class="w-full px-4 py-2 pr-10 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none">
+                            <button type="button" onclick="window.togglePassword('new-password', 'eye-admin')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-brand-green2 transition-colors focus:outline-none">
+                                <i id="eye-admin" class="fa-solid fa-eye-slash"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="md:col-span-3 flex justify-end">
                         <button type="submit" class="bg-brand-green2 hover:bg-brand-green1 text-white font-bold py-2 px-6 rounded-lg shadow-md transition-colors flex items-center">
@@ -211,7 +227,7 @@
             </div>
 
             <div class="glass-panel rounded-2xl p-6">
-                <h3 class="font-bold text-lg text-brand-green2 mb-4 border-b pb-2">Daftar Akun Relawan</h3>
+                <h3 class="font-bold text-lg text-brand-green2 mb-4 border-b pb-2">DAFTAR AKUN RELAWAN</h3>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
@@ -233,7 +249,7 @@
         <!-- TAB: Pengaturan (Khusus Admin) -->
         <div id="tab-pengaturan" class="hidden max-w-2xl mx-auto w-full">
             <div class="glass-panel rounded-2xl p-6 border-t-4 border-t-brand-green1">
-                <h2 class="text-xl font-bold text-brand-green2 mb-6 border-b pb-2"><i class="fa-solid fa-cogs mr-2 text-brand-yellow"></i> Pengaturan Sistem</h2>
+                <h2 class="text-xl font-bold text-brand-green2 mb-6 border-b pb-2"><i class="fa-solid fa-cogs mr-2 text-brand-yellow"></i> PEGATURAN SISTEM</h2>
                 <form id="pengaturan-form" class="space-y-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1" for="edit-dpt-input">Target Daftar Pemilih Tetap (DPT)</label>
@@ -253,6 +269,11 @@
                         <label class="block text-sm font-semibold text-gray-700 mb-1" for="edit-bg-input">Background Aplikasi (Opsional)</label>
                         <p class="text-xs text-gray-500 mb-2">Biarkan kosong jika tidak ingin mengubah background saat ini.</p>
                         <input type="file" id="edit-bg-input" accept="image/*" class="w-full text-sm border border-gray-300 rounded-lg p-2 bg-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1" for="edit-logo-input">Logo Halaman Login (Opsional)</label>
+                        <p class="text-xs text-gray-500 mb-2">Hanya Admin. Lebar akan disesuaikan 50% kolom. Kosongkan jika tidak diganti.</p>
+                        <input type="file" id="edit-logo-input" accept="image/*" class="w-full text-sm border border-gray-300 rounded-lg p-2 bg-white">
                     </div>
                     <button type="submit" class="w-full bg-brand-green2 hover:bg-brand-green1 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-colors mt-4 flex items-center justify-center">
                         <i class="fa-solid fa-save mr-2"></i> Simpan Pengaturan
@@ -328,7 +349,7 @@
 
             <!-- Progress Bars (3 Kolom) -->
             <div class="glass-panel rounded-xl p-6">
-                <h3 class="font-bold text-gray-800 mb-4 border-b pb-2"><i class="fa-solid fa-chart-pie mr-2 text-brand-green1"></i> Progres Kemenangan</h3>
+                <h3 class="font-bold text-gray-800 mb-4 border-b pb-2"><i class="fa-solid fa-chart-pie mr-2 text-brand-green1"></i> PROGRES KEMENANGAN</h3>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Global -->
@@ -336,7 +357,7 @@
                         <div class="flex justify-between items-end mb-1">
                             <div>
                                 <p class="text-sm font-bold text-gray-700">Total Global</p>
-                                <p class="text-xs text-gray-500">Target: <span id="text-dpt" class="font-semibold text-brand-green2">0</span></p>
+                                <p class="text-xs text-gray-500">Jumlah: <span id="text-dpt" class="font-semibold text-brand-green2">0</span></p>
                             </div>
                             <span id="progress-text" class="text-xl font-black text-brand-green1">0%</span>
                         </div>
@@ -350,7 +371,7 @@
                         <div class="flex justify-between items-end mb-1">
                             <div>
                                 <p class="text-sm font-bold text-gray-700">Laki-laki</p>
-                                <p class="text-xs text-gray-500">Target: <span id="text-target-lk" class="font-semibold text-blue-600">0</span></p>
+                                <p class="text-xs text-gray-500">Jumlah: <span id="text-target-lk" class="font-semibold text-blue-600">0</span></p>
                             </div>
                             <span id="percent-target-lk" class="text-xl font-black text-blue-500">0%</span>
                         </div>
@@ -364,7 +385,7 @@
                         <div class="flex justify-between items-end mb-1">
                             <div>
                                 <p class="text-sm font-bold text-gray-700">Perempuan</p>
-                                <p class="text-xs text-gray-500">Target: <span id="text-target-pr" class="font-semibold text-pink-600">0</span></p>
+                                <p class="text-xs text-gray-500">Jumlah: <span id="text-target-pr" class="font-semibold text-pink-600">0</span></p>
                             </div>
                             <span id="percent-target-pr" class="text-xl font-black text-pink-500">0%</span>
                         </div>
@@ -378,7 +399,7 @@
             <!-- Charts -->
             <div class="grid grid-cols-1 gap-6">
                 <div class="glass-panel rounded-xl p-6">
-                    <h3 class="font-bold text-gray-800 mb-4 text-center">Sebaran Per Dusun</h3>
+                    <h3 class="font-bold text-gray-800 mb-4 text-center">STATISTIK PER DUSUN</h3>
                     <div class="relative h-64 w-full"><canvas id="addressChart"></canvas></div>
                 </div>
             </div>
@@ -387,7 +408,7 @@
         <!-- TAB 3: Data Table -->
         <div id="tab-tabel" class="hidden glass-panel rounded-2xl p-6 border-t-4 border-t-brand-green1">
             <div class="flex justify-between items-center mb-4 border-b pb-3">
-                <h3 class="font-bold text-lg text-brand-green2"><i class="fa-solid fa-list mr-2"></i> Data Pemilih Terakhir</h3>
+                <h3 class="font-bold text-lg text-brand-green2"><i class="fa-solid fa-list mr-2"></i> DATA PEMILIH 04</h3>
             </div>
             
             <!-- Filters -->
@@ -444,7 +465,7 @@
         </div>
         
         <footer class="mt-8 text-center text-sm text-gray-500 pb-4 flex justify-center items-center gap-3">
-            <span>&copy; 2026 Tim Sukses Pemenangan Tika Liyana, M.Kom (04). Data tersimpan aman di Cloud.</span>
+            <span>&copy; PAWON GAGASAN | BIDANG RISET DAN DATA STRATEGIS</span>
             <!-- Tombol Reset Disembunyikan -->
             <button onclick="window.confirmReset()" class="text-gray-300 hover:text-red-500 transition-colors" title="Reset Data">
                 <i class="fa-solid fa-triangle-exclamation"></i>
