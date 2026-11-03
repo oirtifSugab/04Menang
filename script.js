@@ -459,6 +459,76 @@ window.exportData = function() {
     XLSX.writeFile(workbook, "Data_Pemilih_04_Tika_Liyana.xlsx");
 };
 
+window.importData = function(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            
+            // Ambil sheet pertama
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            
+            // Konversi ke format JSON JSON
+            const json_data = XLSX.utils.sheet_to_json(worksheet);
+
+            if (json_data.length === 0) {
+                window.openModal({type: 'error', title: 'Data Kosong', message: 'File Excel tidak memiliki isi data.'});
+                document.getElementById('import-excel').value = ""; // Reset input
+                return;
+            }
+
+            let importedCount = 0;
+            let duplicateCount = 0;
+            const relawanName = sessionStorage.getItem('sessionName') || 'System Import';
+
+            json_data.forEach(row => {
+                // Sesuaikan dengan penamaan kunci header yang diexport
+                const nama = row["Nama Lengkap"];
+                const alamat = row["Alamat"];
+                const jk = row["Jenis Kelamin"];
+
+                if (nama && alamat && jk) {
+                    const normalizedName = String(nama).trim().toLowerCase().replace(/\s+/g, ' ');
+                    const isDuplicate = appData.voters.some(v => v.name.toLowerCase().replace(/\s+/g, ' ') === normalizedName);
+                    
+                    if (isDuplicate) {
+                        duplicateCount++;
+                    } else {
+                        const newVoter = {
+                            name: String(nama).trim().toUpperCase(),
+                            address: String(alamat).trim(),
+                            gender: String(jk).trim(),
+                            inputBy: relawanName,
+                            timestamp: new Date().toISOString() // Generate waktu saat ini
+                        };
+                        push(ref(db, 'voters'), newVoter);
+                        importedCount++;
+                    }
+                }
+            });
+
+            document.getElementById('import-excel').value = ""; // Reset input
+            
+            window.openModal({
+                type: 'success', 
+                title: 'Import Selesai', 
+                message: `Berhasil mengimpor ${importedCount} data pemilih. \n(${duplicateCount} data dilewati karena duplikat).`
+            });
+
+        } catch (error) {
+            console.error(error);
+            document.getElementById('import-excel').value = ""; 
+            window.openModal({type: 'error', title: 'Format Salah', message: 'Gagal memproses file Excel. Pastikan format tabel sesuai hasil Export.'});
+        }
+    };
+    reader.readAsArrayBuffer(file);
+};
+
 window.openModal = function(options) {
     const modal = document.getElementById('custom-modal');
     const { type = 'info', title, message, onConfirm = null } = options;
