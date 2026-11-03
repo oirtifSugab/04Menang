@@ -16,6 +16,7 @@ const db = getDatabase(app);
 
 // --- State Management ---
 let appData = { dptTotal: 0, bgImage: '', fotoCalon: '', voters: [], users: [] };
+let currentActiveTab = null; // Variabel baru untuk melacak posisi tab
 let addressChartInstance = null;
 let genderChartInstance = null;
 
@@ -56,6 +57,7 @@ document.getElementById('login-form').addEventListener('submit', function(e) {
 
 window.logoutAdmin = function() {
     sessionStorage.clear();
+    currentActiveTab = null; // Reset posisi tab agar kembali ke default saat login lagi
     document.getElementById('login-form').reset();
     checkRouter();
 };
@@ -82,17 +84,26 @@ function checkRouter() {
         document.getElementById('btn-tab-akun').classList.remove('hidden');
         document.getElementById('btn-tab-pengaturan').classList.remove('hidden');
         document.getElementById('btn-tab-input').classList.add('hidden');
-        window.switchTab('tab-akun'); // Default admin ke kelola akun
         
-        // Isi nilai form DPT saat ini
-        if(document.getElementById('edit-dpt-input')) {
-            document.getElementById('edit-dpt-input').value = appData.dptTotal || '';
+        // HANYA pindah tab secara otomatis jika belum ada tab yang terbuka (saat baru login/refresh)
+        if (!currentActiveTab) {
+            window.switchTab('tab-akun');
+        }
+        
+        // Isi nilai form DPT saat ini (jangan timpa teks jika admin sedang mengetik di kolom tersebut)
+        const dptInputEl = document.getElementById('edit-dpt-input');
+        if (dptInputEl && document.activeElement !== dptInputEl) {
+            dptInputEl.value = appData.dptTotal || '';
         }
     } else {
         document.getElementById('btn-tab-akun').classList.add('hidden');
         document.getElementById('btn-tab-pengaturan').classList.add('hidden');
         document.getElementById('btn-tab-input').classList.remove('hidden');
-        window.switchTab('tab-input'); // Default user ke input data
+        
+        // HANYA pindah tab secara otomatis jika belum ada tab yang terbuka
+        if (!currentActiveTab) {
+            window.switchTab('tab-input');
+        }
     }
 }
 
@@ -360,6 +371,9 @@ window.switchTab = function(targetTab) {
         console.warn("Akses ditolak: Hanya Admin.");
         return;
     }
+
+    // SIMPAN NAMA TAB KE DALAM VARIABEL TRACKING
+    currentActiveTab = targetTab;
 
     // 2. Sembunyikan semua konten tab
     document.getElementById('tab-akun').classList.add('hidden');
