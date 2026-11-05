@@ -177,11 +177,11 @@
             <div class="flex gap-3">
                 <!-- TAMBAHAN: Tombol Import Excel -->
                 <input type="file" id="import-excel" accept=".xlsx, .xls" class="hidden" onchange="window.importData(event)">
-                <label for="import-excel" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors text-sm flex items-center cursor-pointer" title="Import Data dari Excel">
+                <label id="btn-import-label" for="import-excel" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors text-sm flex items-center cursor-pointer" title="Import Data dari Excel">
                     <i class="fa-solid fa-file-import mr-2"></i> Import Excel
                 </label>
 
-                <button onclick="window.exportData()" class="bg-brand-yellow hover:bg-brand-olive text-brand-green2 hover:text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors text-sm flex items-center">
+                <button id="btn-export" onclick="window.exportData()" class="bg-brand-yellow hover:bg-brand-olive text-brand-green2 hover:text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors text-sm flex items-center">
                     <i class="fa-solid fa-file-excel mr-2"></i> Export Excel
                 </button>
                 <button onclick="window.logoutAdmin()" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition-colors text-sm flex items-center">
@@ -414,33 +414,44 @@
                 <h3 class="font-bold text-lg text-brand-green2"><i class="fa-solid fa-list mr-2"></i> DATA PEMILIH 04</h3>
             </div>
             
-            <!-- Filters -->
-            <div class="flex flex-col sm:flex-row gap-3 mb-4">
-                <!-- TAMBAHAN: Input Filter Nama -->
-                <div class="relative w-full sm:w-64">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
-                    </span>
-                    <input type="text" id="filter-nama" oninput="renderTable()" placeholder="Cari nama pemilih..." 
-                        class="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white text-gray-700 uppercase">
+            <!-- Filters & Jumlah -->
+            <div class="flex flex-col lg:flex-row justify-between gap-4 mb-4">
+                
+                <!-- Kelompok Filter Kiri -->
+                <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                    <div class="relative w-full sm:w-64">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                            <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                        </span>
+                        <input type="text" id="filter-nama" oninput="renderTable()" placeholder="Cari nama pemilih..." 
+                            class="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white text-gray-700 uppercase">
+                    </div>
+                    
+                    <select id="filter-alamat" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
+                        <option value="semua">Semua Alamat</option>
+                        <option value="Dusun 1">Dusun 1</option>
+                        <option value="Dusun 2">Dusun 2</option>
+                        <option value="Dusun 3">Dusun 3</option>
+                        <option value="Dusun 4">Dusun 4</option>
+                        <option value="Dusun 5">Dusun 5</option>
+                        <option value="Dusun 6">Dusun 6</option>
+                        <option value="Dusun 7">Dusun 7</option>
+                        <option value="Dusun 8">Dusun 8</option>
+                    </select>
+                    
+                    <select id="filter-jk" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
+                        <option value="semua">Semua Jenis Kelamin</option>
+                        <option value="Laki-laki">Laki-laki</option>
+                        <option value="Perempuan">Perempuan</option>
+                    </select>
+                </div>
+
+                <!-- Kotak Jumlah Kanan -->
+                <div class="flex items-center justify-center bg-brand-offwhite border-2 border-brand-green1 px-5 py-2 rounded-lg text-brand-green2 font-bold flex-shrink-0 shadow-sm">
+                    <i class="fa-solid fa-users mr-2 text-brand-yellow"></i>
+                    JUMLAH: <span id="filtered-count" class="ml-2 text-lg font-black text-brand-green1">0</span>
                 </div>
                 
-                <select id="filter-alamat" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
-                    <option value="semua">Semua Alamat</option>
-                    <option value="Dusun 1">Dusun 1</option>
-                    <option value="Dusun 2">Dusun 2</option>
-                    <option value="Dusun 3">Dusun 3</option>
-                    <option value="Dusun 4">Dusun 4</option>
-                    <option value="Dusun 5">Dusun 5</option>
-                    <option value="Dusun 6">Dusun 6</option>
-                    <option value="Dusun 7">Dusun 7</option>
-                    <option value="Dusun 8">Dusun 8</option>
-                </select>
-                <select id="filter-jk" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
-                    <option value="semua">Semua Jenis Kelamin</option>
-                    <option value="Laki-laki">Laki-laki</option>
-                    <option value="Perempuan">Perempuan</option>
-                </select>
             </div>
             
             <div class="overflow-x-auto">
