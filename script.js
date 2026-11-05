@@ -759,6 +759,10 @@ window.renderTable = function() {
         return matchNama && matchAlamat && matchJk;
     });
     
+    // UPDATE ANGKA PADA KOTAK "JUMLAH" SESUAI HASIL FILTER
+    const countEl = document.getElementById('filtered-count');
+    if (countEl) countEl.innerText = filteredVoters.length.toLocaleString('id-ID');
+    
     if (filteredVoters.length === 0) {
         emptyState.classList.remove('hidden');
         return;
