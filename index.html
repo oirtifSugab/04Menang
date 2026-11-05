@@ -454,17 +454,18 @@
                 
             </div>
             
-            <div class="overflow-x-auto">
+            <!-- Tambahkan batasan tinggi (max-h-[60vh]) dan overflow vertikal -->
+            <div class="overflow-x-auto overflow-y-auto max-h-[60vh] border-b border-gray-200">
                 <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-50 text-gray-600 text-sm border-b">
-                            <th class="p-3 font-semibold w-12 text-center">No</th>
-                            <th class="p-3 font-semibold">Nama Lengkap</th>
-                            <th class="p-3 font-semibold">Alamat</th>
-                            <th class="p-3 font-semibold">Jenis Kelamin</th>
-                            <th class="p-3 font-semibold text-center">Waktu Input</th>
-                            <!-- TAMBAHAN ID UNTUK HEADER AKSI -->
-                            <th class="p-3 font-semibold text-center" id="th-aksi">Aksi</th>
+                    <!-- Pindahkan bg-gray-50 ke thead, tambahkan sticky, top-0, dan z-10 -->
+                    <thead class="sticky top-0 z-10 bg-gray-50 shadow-sm">
+                        <tr class="text-gray-600 text-sm border-b">
+                            <th class="p-3 font-semibold w-12 text-center bg-gray-50">No</th>
+                            <th class="p-3 font-semibold bg-gray-50">Nama Lengkap</th>
+                            <th class="p-3 font-semibold bg-gray-50">Alamat</th>
+                            <th class="p-3 font-semibold bg-gray-50">Jenis Kelamin</th>
+                            <th class="p-3 font-semibold text-center bg-gray-50">Waktu Input</th>
+                            <th class="p-3 font-semibold text-center bg-gray-50" id="th-aksi">Aksi</th>
                         </tr>
                     </thead>
                     <tbody id="voter-table-body" class="text-sm">
