@@ -16,7 +16,7 @@ const db = getDatabase(app);
 
 // --- State Management ---
 // Update struktur appData
-let appData = { dptTotal: 0, targetLk: 0, targetPr: 0, bgImage: '', fotoCalon: '', voters: [], users: [] };
+let appData = { dptTotal: 0, targetPersentase: 0, targetLk: 0, targetPr: 0, bgImage: '', fotoCalon: '', voters: [], users: [] };
 let currentActiveTab = null; 
 let addressChartInstance = null;
 // genderChartInstance dihapus
@@ -124,7 +124,14 @@ function checkRouter() {
         const prInputEl = document.getElementById('edit-target-pr');
         if (prInputEl && document.activeElement !== prInputEl) prInputEl.value = appData.targetPr || '';
         
+        // TAMBAHKAN DI SINI
+        const persenInputEl = document.getElementById('edit-persentase');
+        if (persenInputEl && document.activeElement !== persenInputEl) {
+            persenInputEl.value = appData.targetPersentase || '';
+        }
+        
     } else if (role === 'viewer') {
+
         // PENGATURAN KHUSUS PEMANTAU (Read-Only)
         document.getElementById('btn-tab-akun').classList.add('hidden');
         document.getElementById('btn-tab-pengaturan').classList.add('hidden');
@@ -154,6 +161,7 @@ onValue(dbRef, (snapshot) => {
     const data = snapshot.val();
     if (data) {
         appData.dptTotal = data.settings?.dptTotal || 0;
+        appData.targetPersentase = data.settings?.targetPersentase || 0;
         appData.targetLk = data.settings?.targetLk || 0;
         appData.targetPr = data.settings?.targetPr || 0;
         appData.bgImage = data.settings?.bgImage || '';
@@ -218,6 +226,7 @@ if (pengaturanForm) {
         e.preventDefault();
         
         const dptInput = parseInt(document.getElementById('edit-dpt-input').value) || 0;
+        const persentaseInput = parseInt(document.getElementById('edit-persentase').value) || 0; // Tambahkan ini
         const targetLkInput = parseInt(document.getElementById('edit-target-lk').value) || 0;
         const targetPrInput = parseInt(document.getElementById('edit-target-pr').value) || 0;
         
@@ -226,6 +235,7 @@ if (pengaturanForm) {
 
         const settingsData = {
             dptTotal: dptInput,
+            targetPersentase: persentaseInput, // Tambahkan ini
             targetLk: targetLkInput,
             targetPr: targetPrInput
         };
@@ -252,7 +262,12 @@ if (pengaturanForm) {
             await update(ref(db, 'settings'), settingsData);
             window.openModal({ type: 'success', title: 'Berhasil', message: 'Pengaturan dan DPT berhasil diperbarui.' });
             
-            pengaturanForm.reset(); // Kosongkan input file agar tidak ganda saat simpan selanjutnya
+            // PERBAIKAN: Hanya kosongkan input tipe file, JANGAN reset seluruh form
+            // agar angka DPT, Persentase, dan Target Jenis Kelamin tetap tampil.
+            const editBgInput = document.getElementById('edit-bg-input');
+            const editLogoInput = document.getElementById('edit-logo-input');
+            if (editBgInput) editBgInput.value = "";
+            if (editLogoInput) editLogoInput.value = "";
             
         } catch (error) {
             if (error !== 'Limit Size') console.error("Error upload:", error);
@@ -675,6 +690,35 @@ window.updateDashboard = function() {
     document.getElementById('stat-total').innerText = total.toLocaleString('id-ID');
     document.getElementById('stat-male').innerText = males.toLocaleString('id-ID');
     document.getElementById('stat-female').innerText = females.toLocaleString('id-ID');
+
+    // === LOGIKA TARGET & PERGANTIAN WARNA KOTAK TOTAL ===
+    const targetKalkulasiSuara = Math.round((appData.targetPersentase / 100) * appData.dptTotal);
+    
+    const cardTotal = document.getElementById('card-total');
+    const labelTotal = document.getElementById('text-label-total');
+    const statTotalEl = document.getElementById('stat-total');
+    
+    document.getElementById('target-kalkulasi').innerText = targetKalkulasiSuara.toLocaleString('id-ID');
+    document.getElementById('target-persen-label').innerText = appData.targetPersentase;
+
+    if (appData.targetPersentase > 0 && total > 0) {
+        if (total < targetKalkulasiSuara) {
+            // Belum mencapai target (Merah)
+            cardTotal.className = "glass-panel rounded-xl p-5 flex items-center justify-between border-b-4 border-red-600 bg-red-50/90 transition-colors duration-500 relative overflow-hidden";
+            labelTotal.className = "text-sm text-red-700 font-bold uppercase";
+            statTotalEl.className = "text-3xl font-black text-red-700 drop-shadow-sm";
+        } else {
+            // Sudah mencapai/melebihi target (Hijau)
+            cardTotal.className = "glass-panel rounded-xl p-5 flex items-center justify-between border-b-4 border-green-500 bg-green-50/90 transition-colors duration-500 relative overflow-hidden";
+            labelTotal.className = "text-sm text-green-700 font-bold uppercase";
+            statTotalEl.className = "text-3xl font-black text-green-700 drop-shadow-sm";
+        }
+    } else {
+        // Default / Kosong
+        cardTotal.className = "glass-panel rounded-xl p-5 flex items-center justify-between border-b-4 border-brand-green1 transition-colors duration-500 relative overflow-hidden";
+        labelTotal.className = "text-sm text-gray-600 font-semibold uppercase";
+        statTotalEl.className = "text-3xl font-black text-gray-900 drop-shadow-sm";
+    }
 
     // Persentase Progres Utama
     const percentage = appData.dptTotal > 0 ? ((total / appData.dptTotal) * 100).toFixed(1) : 0;
