@@ -362,193 +362,98 @@
 
         <!-- TAB 2: Dashboard & Stats -->
         <div id="tab-hasil" class="hidden mt-6 space-y-8">
-            <!-- Top Stats Row (3 Kolom dengan Judul Lencana Modern) -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
-                <!-- KARTU 1: DPT EFEKTIF -->
-                <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between border-b-4 border-amber-500 shadow-sm min-h-[148px]">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md shadow-amber-500/20">
-                            <i class="fa-solid fa-file-shield text-xl"></i>
-                        </div>
+            <!-- Top Stats Row -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div id="card-total" class="glass-panel rounded-xl p-5 flex items-center justify-between border-b-4 border-brand-green1 transition-colors duration-500 relative overflow-hidden">
+                    <div class="flex items-center z-10">
+                        <div class="p-3 bg-white/70 backdrop-blur-sm rounded-lg text-brand-green1 mr-4 shadow-sm"><i class="fa-solid fa-users text-2xl"></i></div>
                         <div>
-                            <!-- Judul Gaya Pill Badge -->
-                            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-amber-50 border border-amber-200/80 mb-1.5">
-                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-                                <p class="text-[11px] font-extrabold text-amber-800 uppercase tracking-wider">DPT Efektif</p>
-                            </div>
-                            <p class="text-3xl font-black text-gray-800 tracking-tight leading-none" id="dpt-efektif-card">0</p>
+                            <p class="text-sm text-gray-600 font-semibold uppercase" id="text-label-total">Total Pemilih 04</p>
+                            <p class="text-3xl font-black text-gray-900 drop-shadow-sm" id="stat-total">0</p>
                         </div>
                     </div>
-                    <div class="pt-2.5 mt-3 border-t border-gray-200/80 flex items-center justify-between text-xs text-gray-500">
-                        <span class="font-medium"><i class="fa-solid fa-filter mr-1.5 text-amber-500"></i>Estimasi Suara Sah</span>
-                        <span class="font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200/60">Bersih</span>
+
+                    <!-- Area info target di pojok kanan atas (Dipercantik & Lebih Jelas) -->
+                    <div class="text-left z-10 flex flex-col justify-center pl-4 border-l border-gray-500/80 my-auto">
+                        <span class="text-[11px] font-bold tracking-wider text-gray-500 uppercase mb-0.5">Target Suara</span>
+                        <div class="flex items-baseline justify-end gap-1.5">
+                            <span id="target-kalkulasi" class="text-xl font-extrabold text-gray-900">0</span>
+                            <span class="text-xs font-bold text-brand-green1 bg-white px-1.5 py-0.5 rounded shadow-2xs border border-gray-100">(<span id="target-persen-label">0</span>%)</span>
+                        </div>
+                        <span class="text-[11px] font-medium text-gray-400 mt-1">DPT Efektif: <span id="dpt-efektif-label" class="text-gray-500 font-bold">0</span></span>
+                    </div>
+
+                </div>
+                <div class="glass-panel rounded-xl p-5 flex items-center border-b-4 border-blue-500">
+                    <div class="p-3 bg-blue-50 rounded-lg text-blue-500 mr-4"><i class="fa-solid fa-mars text-2xl"></i></div>
+                    <div>
+                        <p class="text-sm text-gray-500 font-semibold uppercase">Laki-laki</p>
+                        <p class="text-3xl font-black text-gray-800" id="stat-male">0</p>
                     </div>
                 </div>
-
-                <!-- KARTU 2: TARGET SUARA -->
-                <div class="glass-panel rounded-2xl p-5 flex flex-col justify-between border-b-4 border-brand-yellow shadow-sm min-h-[148px]">
-                    <div class="flex items-start gap-4">
-                        <div class="w-12 h-12 bg-gradient-to-br from-brand-green1 to-brand-green2 rounded-xl flex items-center justify-center text-brand-yellow flex-shrink-0 shadow-md shadow-brand-green2/20">
-                            <i class="fa-solid fa-bullseye text-xl"></i>
-                        </div>
-                        <div>
-                            <!-- Judul Gaya Pill Badge -->
-                            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-brand-offwhite border border-brand-olive/30 mb-1.5">
-                                <span class="w-1.5 h-1.5 rounded-full bg-brand-green1"></span>
-                                <p class="text-[11px] font-extrabold text-brand-green2 uppercase tracking-wider">Target Suara</p>
-                            </div>
-                            <div class="flex items-baseline gap-2">
-                                <p class="text-3xl font-black text-gray-800 tracking-tight leading-none" id="target-kalkulasi-card">0</p>
-                                <span class="text-xs font-extrabold text-brand-green2 bg-brand-yellow/40 px-2 py-0.5 rounded-md border border-brand-yellow">
-                                    <span id="target-persen-label-card">0</span>%
-                                </span>
-                            </div>
-                        </div>
+                <div class="glass-panel rounded-xl p-5 flex items-center border-b-4 border-pink-500">
+                    <div class="p-3 bg-pink-50 rounded-lg text-pink-500 mr-4"><i class="fa-solid fa-venus text-2xl"></i></div>
+                    <div>
+                        <p class="text-sm text-gray-500 font-semibold uppercase">Perempuan</p>
+                        <p class="text-3xl font-black text-gray-800" id="stat-female">0</p>
                     </div>
-                    <div class="pt-2.5 mt-3 border-t border-gray-200/80 flex items-center justify-between text-xs text-gray-500">
-                        <span class="font-medium"><i class="fa-solid fa-flag-checkered mr-1.5 text-brand-green1"></i>Batas Aman Menang</span>
-                        <span class="font-semibold text-brand-green2 bg-brand-offwhite px-2 py-0.5 rounded border border-gray-200">Target Tim</span>
-                    </div>
-                </div>
-
-                <!-- KARTU 3: TOTAL PEMILIH 04 (DENGAN RINCIAN L & P) -->
-                <div id="card-total" class="glass-panel rounded-2xl p-5 flex flex-col justify-between border-b-4 border-brand-green1 transition-colors duration-500 shadow-sm min-h-[148px]">
-                    <div class="flex items-start gap-4">
-                        <div id="icon-box-total" class="w-12 h-12 bg-gradient-to-br from-brand-green1 to-brand-green2 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md transition-colors duration-500">
-                            <i class="fa-solid fa-users text-xl"></i>
-                        </div>
-                        <div>
-                            <!-- Judul Gaya Pill Badge Dinamis -->
-                            <div id="badge-label-total" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white/90 border border-gray-200 mb-1.5 shadow-2xs">
-                                <span id="dot-label-total" class="w-1.5 h-1.5 rounded-full bg-brand-green1 animate-pulse"></span>
-                                <p class="text-[11px] font-extrabold text-gray-700 uppercase tracking-wider" id="text-label-total">Total Pemilih 04</p>
-                            </div>
-                            <p class="text-3xl font-black text-gray-900 tracking-tight leading-none" id="stat-total">0</p>
-                        </div>
-                    </div>
-                    <!-- Rincian Jenis Kelamin Proporsional -->
-                    <div class="grid grid-cols-2 gap-2.5 pt-2.5 mt-3 border-t border-gray-200/80 text-xs">
-                        <div class="flex items-center justify-between bg-white/90 border border-blue-200/80 text-blue-700 px-3 py-1 rounded-lg shadow-2xs">
-                            <span class="font-semibold flex items-center gap-1.5"><i class="fa-solid fa-mars text-blue-500"></i> Laki-laki</span>
-                            <strong id="stat-male" class="font-black text-sm">0</strong>
-                        </div>
-                        <div class="flex items-center justify-between bg-white/90 border border-pink-200/80 text-pink-700 px-3 py-1 rounded-lg shadow-2xs">
-                            <span class="font-semibold flex items-center gap-1.5"><i class="fa-solid fa-venus text-pink-500"></i> Perempuan</span>
-                            <strong id="stat-female" class="font-black text-sm">0</strong>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Progress Bars (3 Kolom Dipercantik) -->
-            <div class="glass-panel rounded-2xl p-6 shadow-sm border border-gray-100">
-                <!-- Header Bagian -->
-                <div class="flex items-center justify-between mb-5 border-b border-gray-200/80 pb-3.5">
-                    <div class="flex items-center gap-3">
-                        <div class="w-9 h-9 rounded-lg bg-brand-green1/10 border border-brand-green1/20 flex items-center justify-center text-brand-green1 shadow-2xs">
-                            <i class="fa-solid fa-chart-pie text-base"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-extrabold text-gray-800 tracking-wide text-sm uppercase">Daftar Pemilih Tetap (DPT)</h3>
-                            <p class="text-[11px] text-gray-500 font-medium">Persentase capaian suara masuk terhadap kuota DPT awal</p>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    
-                    <!-- 1. Total Global -->
-                    <div class="bg-brand-offwhite/50 border border-brand-olive/20 rounded-xl p-4 shadow-2xs flex flex-col justify-between">
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="flex items-center gap-2.5">
-                                <div class="w-8 h-8 rounded-lg bg-brand-green2 text-brand-yellow flex items-center justify-center shadow-xs flex-shrink-0">
-                                    <i class="fa-solid fa-globe text-xs"></i>
-                                </div>
-                                <div>
-                                    <p class="text-xs font-extrabold text-gray-800 uppercase tracking-wider">Total Global</p>
-                                    <p class="text-[11px] text-gray-500 font-medium mt-0.5">
-                                        Jumlah: <span id="text-dpt" class="font-bold text-brand-green2 bg-white px-1.5 py-0.5 rounded border border-gray-200">0</span>
-                                    </p>
-                                </div>
-                            </div>
-                            <span id="progress-text" class="text-xl font-black text-brand-green1 bg-white px-2.5 py-1 rounded-lg border border-gray-200/80 shadow-2xs">0%</span>
-                        </div>
-                        <div class="w-full bg-gray-200/90 rounded-full h-3 overflow-hidden shadow-inner p-0.5">
-                            <div id="progress-bar" class="bg-gradient-to-r from-brand-yellow via-brand-green1 to-brand-green2 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
-                        </div>
-                    </div>
-
-                    <!-- 2. Laki-laki -->
-                    <div class="bg-blue-50/40 border border-blue-200/60 rounded-xl p-4 shadow-2xs flex flex-col justify-between">
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="flex items-center gap-2.5">
-                                <div class="w-8 h-8 rounded-lg bg-blue-500 text-white flex items-center justify-center shadow-xs flex-shrink-0">
-                                    <i class="fa-solid fa-mars text-xs"></i>
-                                </div>
-                                <div>
-                                    <p class="text-xs font-extrabold text-gray-800 uppercase tracking-wider">Laki-laki</p>
-                                    <p class="text-[11px] text-gray-500 font-medium mt-0.5">
-                                        Jumlah: <span id="text-target-lk" class="font-bold text-blue-700 bg-white px-1.5 py-0.5 rounded border border-blue-100">0</span>
-                                    </p>
-                                </div>
-                            </div>
-                            <span id="percent-target-lk" class="text-xl font-black text-blue-600 bg-white px-2.5 py-1 rounded-lg border border-blue-100 shadow-2xs">0%</span>
-                        </div>
-                        <div class="w-full bg-gray-200/90 rounded-full h-3 overflow-hidden shadow-inner p-0.5">
-                            <div id="progress-bar-lk" class="bg-gradient-to-r from-blue-400 to-blue-600 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
-                        </div>
-                    </div>
-
-                    <!-- 3. Perempuan -->
-                    <div class="bg-pink-50/40 border border-pink-200/60 rounded-xl p-4 shadow-2xs flex flex-col justify-between">
-                        <div class="flex justify-between items-start mb-3">
-                            <div class="flex items-center gap-2.5">
-                                <div class="w-8 h-8 rounded-lg bg-pink-500 text-white flex items-center justify-center shadow-xs flex-shrink-0">
-                                    <i class="fa-solid fa-venus text-xs"></i>
-                                </div>
-                                <div>
-                                    <p class="text-xs font-extrabold text-gray-800 uppercase tracking-wider">Perempuan</p>
-                                    <p class="text-[11px] text-gray-500 font-medium mt-0.5">
-                                        Jumlah: <span id="text-target-pr" class="font-bold text-pink-700 bg-white px-1.5 py-0.5 rounded border border-pink-100">0</span>
-                                    </p>
-                                </div>
-                            </div>
-                            <span id="percent-target-pr" class="text-xl font-black text-pink-600 bg-white px-2.5 py-1 rounded-lg border border-pink-100 shadow-2xs">0%</span>
-                        </div>
-                        <div class="w-full bg-gray-200/90 rounded-full h-3 overflow-hidden shadow-inner p-0.5">
-                            <div id="progress-bar-pr" class="bg-gradient-to-r from-pink-400 to-pink-600 h-full rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
-                        </div>
-                    </div>
-
                 </div>
             </div>
 
-            <!-- Charts (Dipercantik & Serasi) -->
-            <div class="grid grid-cols-1 gap-6">
-                <div class="glass-panel rounded-2xl p-6 shadow-sm border border-gray-100">
-                    <!-- Header Bagian Grafik -->
-                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6 border-b border-gray-200/80 pb-3.5">
-                        <div class="flex items-center gap-3">
-                            <div class="w-9 h-9 rounded-lg bg-brand-green1/10 border border-brand-green1/20 flex items-center justify-center text-brand-green1 shadow-2xs">
-                                <i class="fa-solid fa-chart-column text-base"></i>
-                            </div>
+            <!-- Progress Bars (3 Kolom) -->
+            <div class="glass-panel rounded-xl p-6">
+                <h3 class="font-bold text-gray-800 mb-4 border-b pb-2"><i class="fa-solid fa-chart-pie mr-2 text-brand-green1"></i> DAFTAR PEMILIH TETAP (DPT)</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Global -->
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
                             <div>
-                                <h3 class="font-extrabold text-gray-800 tracking-wide text-sm uppercase">Statistik Per Dusun</h3>
-                                <p class="text-[11px] text-gray-500 font-medium">Sebaran perolehan dukungan pemilih di 8 wilayah dusun</p>
+                            <p class="text-sm font-bold text-gray-700">Total Global</p>
+                            <p class="text-xs text-gray-500">Jumlah: <span id="text-dpt" class="font-semibold text-brand-green2">0</span></p>
+                        </div>
+                            <span id="progress-text" class="text-xl font-black text-brand-green1">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                            <div id="progress-bar" class="bg-gradient-to-r from-brand-yellow to-brand-green1 h-3 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Laki-laki -->
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <div>
+                                <p class="text-sm font-bold text-gray-700">Laki-laki</p>
+                                <p class="text-xs text-gray-500">Jumlah: <span id="text-target-lk" class="font-semibold text-blue-600">0</span></p>
                             </div>
+                            <span id="percent-target-lk" class="text-xl font-black text-blue-500">0%</span>
                         </div>
-                        <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-offwhite border border-brand-olive/20 text-xs font-bold text-brand-green2 self-start sm:self-auto">
-                            <span class="w-2 h-2 rounded-full bg-brand-green1"></span>
-                            8 Wilayah Dusun
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                            <div id="progress-bar-lk" class="bg-blue-400 h-3 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
                         </div>
                     </div>
-                    
-                    <!-- Area Canvas Grafik -->
-                    <div class="relative h-72 w-full pt-2">
-                        <canvas id="addressChart"></canvas>
+
+                    <!-- Perempuan -->
+                    <div>
+                        <div class="flex justify-between items-end mb-1">
+                            <div>
+                                <p class="text-sm font-bold text-gray-700">Perempuan</p>
+                                <p class="text-xs text-gray-500">Jumlah: <span id="text-target-pr" class="font-semibold text-pink-600">0</span></p>
+                            </div>
+                            <span id="percent-target-pr" class="text-xl font-black text-pink-500">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                            <div id="progress-bar-pr" class="bg-pink-400 h-3 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+                        </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="grid grid-cols-1 gap-6">
+                <div class="glass-panel rounded-xl p-6">
+                    <h3 class="font-bold text-gray-800 mb-4 text-center">STATISTIK PER DUSUN</h3>
+                    <div class="relative h-64 w-full"><canvas id="addressChart"></canvas></div>
                 </div>
             </div>
         </div>
@@ -563,16 +468,18 @@
             <div class="flex flex-col lg:flex-row justify-between gap-4 mb-4">
                 
                 <!-- Kelompok Filter Kiri -->
-                <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                    <div class="relative w-full sm:w-64">
+                <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    <!-- Filter Nama -->
+                    <div class="relative w-full sm:w-48">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                             <i class="fa-solid fa-magnifying-glass text-xs"></i>
                         </span>
-                        <input type="text" id="filter-nama" oninput="renderTable()" placeholder="Cari nama pemilih..." 
+                        <input type="text" id="filter-nama" oninput="renderTable()" placeholder="Cari pemilih..." 
                             class="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white text-gray-700 uppercase">
                     </div>
                     
-                    <select id="filter-alamat" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
+                    <!-- Filter Alamat & JK -->
+                    <select id="filter-alamat" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-36 text-gray-700">
                         <option value="semua">Semua Alamat</option>
                         <option value="Dusun 1">Dusun 1</option>
                         <option value="Dusun 2">Dusun 2</option>
@@ -583,12 +490,30 @@
                         <option value="Dusun 7">Dusun 7</option>
                         <option value="Dusun 8">Dusun 8</option>
                     </select>
-                    
-                    <select id="filter-jk" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
-                        <option value="semua">Semua Jenis Kelamin</option>
+                    <select id="filter-jk" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-36 text-gray-700">
+                        <option value="semua">Semua Gender</option>
                         <option value="Laki-laki">Laki-laki</option>
                         <option value="Perempuan">Perempuan</option>
                     </select>
+
+                    <!-- BARU: Filter Penginput (Dropdown) -->
+                    <div class="relative w-full sm:w-40">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 pointer-events-none">
+                            <i class="fa-solid fa-user-pen text-xs"></i>
+                        </span>
+                        <!-- onchange dipanggil agar tabel terupdate saat dropdown dipilih -->
+                        <select id="filter-penginput" onchange="renderTable()" class="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer text-gray-700">
+                            <option value="semua">Semua Penginput</option>
+                            <!-- Opsi akan diisi secara otomatis oleh JavaScript -->
+                        </select>
+                    </div>
+
+                    <!-- BARU: Filter Rentang Tanggal -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <input type="date" id="filter-tgl-mulai" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white text-gray-700 cursor-pointer" title="Dari Tanggal">
+                        <span class="text-gray-400 text-sm font-semibold">-</span>
+                        <input type="date" id="filter-tgl-akhir" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white text-gray-700 cursor-pointer" title="Sampai Tanggal">
+                    </div>
                 </div>
 
                 <!-- Kotak Jumlah Kanan -->
