@@ -468,18 +468,16 @@
             <div class="flex flex-col lg:flex-row justify-between gap-4 mb-4">
                 
                 <!-- Kelompok Filter Kiri -->
-                <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
-                    <!-- Filter Nama -->
-                    <div class="relative w-full sm:w-48">
+                <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                    <div class="relative w-full sm:w-64">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                             <i class="fa-solid fa-magnifying-glass text-xs"></i>
                         </span>
-                        <input type="text" id="filter-nama" oninput="renderTable()" placeholder="Cari pemilih..." 
+                        <input type="text" id="filter-nama" oninput="renderTable()" placeholder="Cari nama pemilih..." 
                             class="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white text-gray-700 uppercase">
                     </div>
                     
-                    <!-- Filter Alamat & JK -->
-                    <select id="filter-alamat" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-36 text-gray-700">
+                    <select id="filter-alamat" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
                         <option value="semua">Semua Alamat</option>
                         <option value="Dusun 1">Dusun 1</option>
                         <option value="Dusun 2">Dusun 2</option>
@@ -490,30 +488,12 @@
                         <option value="Dusun 7">Dusun 7</option>
                         <option value="Dusun 8">Dusun 8</option>
                     </select>
-                    <select id="filter-jk" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-36 text-gray-700">
-                        <option value="semua">Semua Gender</option>
+                    
+                    <select id="filter-jk" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
+                        <option value="semua">Semua Jenis Kelamin</option>
                         <option value="Laki-laki">Laki-laki</option>
                         <option value="Perempuan">Perempuan</option>
                     </select>
-
-                    <!-- BARU: Filter Penginput (Dropdown) -->
-                    <div class="relative w-full sm:w-40">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400 pointer-events-none">
-                            <i class="fa-solid fa-user-pen text-xs"></i>
-                        </span>
-                        <!-- onchange dipanggil agar tabel terupdate saat dropdown dipilih -->
-                        <select id="filter-penginput" onchange="renderTable()" class="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer text-gray-700">
-                            <option value="semua">Semua Penginput</option>
-                            <!-- Opsi akan diisi secara otomatis oleh JavaScript -->
-                        </select>
-                    </div>
-
-                    <!-- BARU: Filter Rentang Tanggal -->
-                    <div class="flex items-center gap-2 w-full sm:w-auto">
-                        <input type="date" id="filter-tgl-mulai" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white text-gray-700 cursor-pointer" title="Dari Tanggal">
-                        <span class="text-gray-400 text-sm font-semibold">-</span>
-                        <input type="date" id="filter-tgl-akhir" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white text-gray-700 cursor-pointer" title="Sampai Tanggal">
-                    </div>
                 </div>
 
                 <!-- Kotak Jumlah Kanan -->
