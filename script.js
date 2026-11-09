@@ -286,7 +286,6 @@ onValue(dbRef, (snapshot) => {
 
     window.renderTable(); 
     if(window.renderUsers) window.renderUsers();
-    if(window.updatePenginputDropdown) window.updatePenginputDropdown();
 });
 
 // --- Pengaturan Aplikasi (Admin) ---
@@ -870,48 +869,21 @@ window.updateDashboard = function() {
 window.renderTable = function() {
     const tableBody = document.getElementById('voter-table-body');
     const emptyState = document.getElementById('empty-state');
-    if (!tableBody) return;
     tableBody.innerHTML = '';
     
-    // Ambil semua elemen filter
     const elNama = document.getElementById('filter-nama');
     const elAlamat = document.getElementById('filter-alamat');
     const elJk = document.getElementById('filter-jk');
-    const elPenginput = document.getElementById('filter-penginput');
-    const elTglMulai = document.getElementById('filter-tgl-mulai');
-    const elTglAkhir = document.getElementById('filter-tgl-akhir');
     
-    // Ambil valuenya
     const valNama = elNama ? elNama.value.trim().toLowerCase() : '';
     const valAlamat = elAlamat ? elAlamat.value : 'semua';
     const valJk = elJk ? elJk.value : 'semua';
-    const valPenginput = elPenginput ? elPenginput.value : 'semua';
-    const valTglMulai = elTglMulai ? elTglMulai.value : '';
-    const valTglAkhir = elTglAkhir ? elTglAkhir.value : '';
 
     const filteredVoters = appData.voters.filter(voter => {
-        // Filter Nama, Alamat, JK
         const matchNama = valNama === '' || voter.name.toLowerCase().includes(valNama);
         const matchAlamat = (valAlamat === 'semua') || (voter.address === valAlamat);
         const matchJk = (valJk === 'semua') || (voter.gender === valJk);
-        
-        // Filter Penginput (Relawan)
-        const matchPenginput = (valPenginput === 'semua') || (voter.inputBy && voter.inputBy.toLowerCase() === valPenginput);
-        
-        // Filter Rentang Tanggal
-        let matchTanggal = true;
-        if (valTglMulai !== '' || valTglAkhir !== '') {
-            // Ambil format YYYY-MM-DD dari timestamp di database
-            const voterDate = voter.timestamp ? voter.timestamp.split('T')[0] : '';
-            if (!voterDate) {
-                matchTanggal = false;
-            } else {
-                if (valTglMulai !== '' && voterDate < valTglMulai) matchTanggal = false;
-                if (valTglAkhir !== '' && voterDate > valTglAkhir) matchTanggal = false;
-            }
-        }
-        
-        return matchNama && matchAlamat && matchJk && matchPenginput && matchTanggal;
+        return matchNama && matchAlamat && matchJk;
     });
     
     // UPDATE ANGKA PADA KOTAK "JUMLAH" SESUAI HASIL FILTER
@@ -960,29 +932,4 @@ window.renderTable = function() {
         `;
         tableBody.appendChild(tr);
     });
-};
-
-window.updatePenginputDropdown = function() {
-    const selectPenginput = document.getElementById('filter-penginput');
-    if (!selectPenginput) return;
-
-    // Simpan pilihan saat ini agar tidak ter-reset kembali ke "Semua Penginput" saat database berkedip/update
-    const currentValue = selectPenginput.value;
-
-    // Bersihkan isi dropdown, sisakan opsi default
-    selectPenginput.innerHTML = '<option value="semua">Semua Penginput</option>';
-
-    // Loop data users (akun relawan yang dibuat admin) dan masukkan ke dropdown
-    appData.users.forEach(user => {
-        const option = document.createElement('option');
-        // Gunakan toLowerCase untuk memudahkan pencocokan di renderTable
-        option.value = user.nama.toLowerCase(); 
-        option.text = user.nama;
-        selectPenginput.appendChild(option);
-    });
-
-    // Kembalikan pilihan ke value sebelumnya jika memungkinkan
-    if (currentValue && currentValue !== 'semua') {
-        selectPenginput.value = currentValue;
-    }
 };
