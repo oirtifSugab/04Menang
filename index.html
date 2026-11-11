@@ -17,6 +17,11 @@
     <!-- SheetJS (Untuk Export ke Excel) -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
 
+    <!-- Flatpickr (Untuk Format Kalender dd/mm/yyyy) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
+
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -563,7 +568,9 @@
             <div class="flex flex-col lg:flex-row justify-between gap-4 mb-4">
                 
                 <!-- Kelompok Filter Kiri -->
-                <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                <div class="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+                    
+                    <!-- Pencarian Nama -->
                     <div class="relative w-full sm:w-64">
                         <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                             <i class="fa-solid fa-magnifying-glass text-xs"></i>
@@ -572,7 +579,8 @@
                             class="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white text-gray-700 uppercase">
                     </div>
                     
-                    <select id="filter-alamat" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
+                    <!-- Filter Dusun -->
+                    <select id="filter-alamat" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-auto text-gray-700">
                         <option value="semua">Semua Alamat</option>
                         <option value="Dusun 1">Dusun 1</option>
                         <option value="Dusun 2">Dusun 2</option>
@@ -584,11 +592,24 @@
                         <option value="Dusun 8">Dusun 8</option>
                     </select>
                     
-                    <select id="filter-jk" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-48 text-gray-700">
+                    <!-- Filter Jenis Kelamin -->
+                    <select id="filter-jk" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-auto text-gray-700">
                         <option value="semua">Semua Jenis Kelamin</option>
                         <option value="Laki-laki">Laki-laki</option>
                         <option value="Perempuan">Perempuan</option>
                     </select>
+
+                    <!-- TAMBAHAN: Filter Relawan (Penginput) -->
+                    <select id="filter-relawan" onchange="renderTable()" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white cursor-pointer w-full sm:w-auto text-gray-700">
+                        <option value="semua">Semua Relawan</option>
+                    </select>
+
+                    <!-- TAMBAHAN: Filter Rentang Waktu (Mulai & Akhir) -->
+                    <div class="flex items-center gap-2 w-full sm:w-auto">
+                        <input type="text" id="filter-waktu-mulai" placeholder="dd/mm/yyyy" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white text-gray-700 w-full sm:w-32 cursor-pointer bg-white" title="Tanggal Mulai" readonly>
+                        <span class="text-gray-500 font-bold">-</span>
+                        <input type="text" id="filter-waktu-akhir" placeholder="dd/mm/yyyy" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-brand-green1 outline-none text-sm bg-white text-gray-700 w-full sm:w-32 cursor-pointer bg-white" title="Tanggal Akhir" readonly>
+                    </div>
                 </div>
 
                 <!-- Kotak Jumlah Kanan -->
@@ -610,6 +631,8 @@
                             <th class="p-3 font-semibold bg-gray-50">Alamat</th>
                             <th class="p-3 font-semibold bg-gray-50">Jenis Kelamin</th>
                             <th class="p-3 font-semibold text-center bg-gray-50">Waktu Input</th>
+                            <!-- TAMBAHAN KOLOM -->
+                            <th class="p-3 font-semibold bg-gray-50">Penginput</th>
                             <th class="p-3 font-semibold text-center bg-gray-50" id="th-aksi">Aksi</th>
                         </tr>
                     </thead>
