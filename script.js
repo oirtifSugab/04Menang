@@ -231,59 +231,6 @@ onValue(dbRef, (snapshot) => {
     }
     
     window.updateDashboard();
-    // === LOGIKA TARGET BERUNTUN ===
-    const meHadir = appData.marginHadir || 0;
-    const meSah = appData.marginSah || 0;
-    const pembagiTdkSah = appData.pembagiTdkSah || 1;
-    const persentaseTim = appData.targetPersentase || 0;
-    const ekstraTim = appData.targetEkstra || 0;
-    
-    // 1. Suara Hadir (DPT dikurangi MoE Absen)
-    const jumlahAbsen = appData.dptTotal * (meHadir / 100);
-    const suaraHadir = appData.dptTotal - jumlahAbsen;
-    
-    // 2. Suara Tidak Sah Global (Dihitung dari Suara Hadir)
-    const tidakSahGlobal = suaraHadir * (meSah / 100);
-    const suaraSahGlobal = suaraHadir - tidakSahGlobal;
-    
-    // 3. Suara Tidak Sah 04
-    const tidakSah04 = tidakSahGlobal / pembagiTdkSah;
-    
-    // 4. Target Suara Sah 04
-    const targetSuaraSah = (suaraSahGlobal * (persentaseTim / 100)) + ekstraTim;
-    
-    // 5. Total Target Akhir (Target Sah + Beban Batal/Tidak Sah)
-    const targetKalkulasiSuara = Math.round(targetSuaraSah + tidakSah04);
-    
-    const cardTotal = document.getElementById('card-total');
-    const labelTotal = document.getElementById('text-label-total');
-    const statTotalEl = document.getElementById('stat-total');
-    
-    document.getElementById('target-kalkulasi').innerText = targetKalkulasiSuara.toLocaleString('id-ID');
-    document.getElementById('target-persen-label').innerText = persentaseTim;
-    if(document.getElementById('dpt-efektif-label')) {
-        document.getElementById('dpt-efektif-label').innerText = Math.round(suaraSahGlobal).toLocaleString('id-ID');
-    }
-
-    if (persentaseTim > 0 && total > 0) {
-        if (total < targetKalkulasiSuara) {
-            // Merah
-            cardTotal.className = "glass-panel rounded-xl p-5 flex items-center justify-between border-b-4 border-red-600 bg-red-50/90 transition-colors duration-500 relative overflow-hidden";
-            labelTotal.className = "text-sm text-red-700 font-bold uppercase";
-            statTotalEl.className = "text-3xl font-black text-red-700 drop-shadow-sm";
-        } else {
-            // Hijau
-            cardTotal.className = "glass-panel rounded-xl p-5 flex items-center justify-between border-b-4 border-green-500 bg-green-50/90 transition-colors duration-500 relative overflow-hidden";
-            labelTotal.className = "text-sm text-green-700 font-bold uppercase";
-            statTotalEl.className = "text-3xl font-black text-green-700 drop-shadow-sm";
-        }
-    } else {
-        // Default
-        cardTotal.className = "glass-panel rounded-xl p-5 flex items-center justify-between border-b-4 border-brand-green1 transition-colors duration-500 relative overflow-hidden";
-        labelTotal.className = "text-sm text-gray-600 font-semibold uppercase";
-        statTotalEl.className = "text-3xl font-black text-gray-900 drop-shadow-sm";
-    }
-
     window.renderTable(); 
     if(window.renderUsers) window.renderUsers();
 });
@@ -766,52 +713,87 @@ window.updateDashboard = function() {
     const males = appData.voters.filter(v => v.gender === 'Laki-laki').length;
     const females = appData.voters.filter(v => v.gender === 'Perempuan').length;
 
+    // Update angka pemilih & rincian L/P di Kartu ke-3
     document.getElementById('stat-total').innerText = total.toLocaleString('id-ID');
     document.getElementById('stat-male').innerText = males.toLocaleString('id-ID');
     document.getElementById('stat-female').innerText = females.toLocaleString('id-ID');
 
-    // === LOGIKA TARGET & PERGANTIAN WARNA KOTAK TOTAL ===
+    // === LOGIKA TARGET BERUNTUN ===
     const meHadir = appData.marginHadir || 0;
     const meSah = appData.marginSah || 0;
-    const totalMargin = meHadir + meSah;
+    const pembagiTdkSah = appData.pembagiTdkSah || 1;
+    const persentaseTim = appData.targetPersentase || 0;
+    const ekstraTim = appData.targetEkstra || 0;
     
-    const dptEfektif = Math.round(appData.dptTotal - (appData.dptTotal * (totalMargin / 100)));
-    const targetKalkulasiSuara = Math.round(dptEfektif * (appData.targetPersentase / 100));
+    // 1. Suara Hadir (DPT dikurangi MoE Absen)
+    const jumlahAbsen = appData.dptTotal * (meHadir / 100);
+    const suaraHadir = appData.dptTotal - jumlahAbsen;
     
+    // 2. Suara Tidak Sah Global (Dihitung dari Suara Hadir)
+    const tidakSahGlobal = suaraHadir * (meSah / 100);
+    const suaraSahGlobal = suaraHadir - tidakSahGlobal;
+    
+    // 3. Suara Tidak Sah 04
+    const tidakSah04 = tidakSahGlobal / pembagiTdkSah;
+    
+    // 4. Target Suara Sah 04
+    const targetSuaraSah = (suaraSahGlobal * (persentaseTim / 100)) + ekstraTim;
+    
+    // 5. Total Target Akhir (Target Sah + Beban Batal/Tidak Sah)
+    const targetKalkulasiSuara = Math.round(targetSuaraSah + tidakSah04);
+    
+    // Update Kartu 1 (DPT Efektif) & Kartu 2 (Target Suara)
+    const elDptEfektif = document.getElementById('dpt-efektif-card');
+    const elTargetKalkulasi = document.getElementById('target-kalkulasi-card');
+    const elTargetPersen = document.getElementById('target-persen-label-card');
+
+    if (elDptEfektif) elDptEfektif.innerText = Math.round(suaraSahGlobal).toLocaleString('id-ID');
+    if (elTargetKalkulasi) elTargetKalkulasi.innerText = targetKalkulasiSuara.toLocaleString('id-ID');
+    if (elTargetPersen) elTargetPersen.innerText = persentaseTim;
+
+    // Pergantian Warna Kartu ke-3 (Total Pemilih 04) beserta Lencana & Ikonnya
     const cardTotal = document.getElementById('card-total');
     const labelTotal = document.getElementById('text-label-total');
     const statTotalEl = document.getElementById('stat-total');
-    
-    document.getElementById('target-kalkulasi').innerText = targetKalkulasiSuara.toLocaleString('id-ID');
-    document.getElementById('target-persen-label').innerText = appData.targetPersentase;
-    if(document.getElementById('dpt-efektif-label')) document.getElementById('dpt-efektif-label').innerText = dptEfektif.toLocaleString('id-ID');
+    const badgeTotal = document.getElementById('badge-label-total');
+    const dotTotal = document.getElementById('dot-label-total');
+    const iconBoxTotal = document.getElementById('icon-box-total');
 
-    if (appData.targetPersentase > 0 && total > 0) {
+    if (persentaseTim > 0 && total > 0) {
         if (total < targetKalkulasiSuara) {
-            cardTotal.className = "glass-panel rounded-xl p-5 flex items-center justify-between border-b-4 border-red-600 bg-red-50/90 transition-colors duration-500 relative overflow-hidden";
-            labelTotal.className = "text-sm text-red-700 font-bold uppercase";
-            statTotalEl.className = "text-3xl font-black text-red-700 drop-shadow-sm";
+            // Belum mencapai target (Merah)
+            cardTotal.className = "glass-panel rounded-2xl p-5 flex flex-col justify-between border-b-4 border-red-600 bg-red-50/90 transition-colors duration-500 shadow-sm min-h-[148px]";
+            labelTotal.className = "text-[11px] font-extrabold text-red-800 uppercase tracking-wider";
+            statTotalEl.className = "text-3xl font-black text-red-700 tracking-tight leading-none";
+            if (badgeTotal) badgeTotal.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-red-100/90 border border-red-300 mb-1.5";
+            if (dotTotal) dotTotal.className = "w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse";
+            if (iconBoxTotal) iconBoxTotal.className = "w-12 h-12 bg-gradient-to-br from-red-500 to-red-700 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md shadow-red-500/20 transition-colors duration-500";
         } else {
-            cardTotal.className = "glass-panel rounded-xl p-5 flex items-center justify-between border-b-4 border-green-500 bg-green-50/90 transition-colors duration-500 relative overflow-hidden";
-            labelTotal.className = "text-sm text-green-700 font-bold uppercase";
-            statTotalEl.className = "text-3xl font-black text-green-700 drop-shadow-sm";
+            // Sudah mencapai target (Hijau)
+            cardTotal.className = "glass-panel rounded-2xl p-5 flex flex-col justify-between border-b-4 border-green-500 bg-green-50/90 transition-colors duration-500 shadow-sm min-h-[148px]";
+            labelTotal.className = "text-[11px] font-extrabold text-green-800 uppercase tracking-wider";
+            statTotalEl.className = "text-3xl font-black text-green-700 tracking-tight leading-none";
+            if (badgeTotal) badgeTotal.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-green-100/90 border border-green-300 mb-1.5";
+            if (dotTotal) dotTotal.className = "w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse";
+            if (iconBoxTotal) iconBoxTotal.className = "w-12 h-12 bg-gradient-to-br from-green-500 to-green-700 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md shadow-green-500/20 transition-colors duration-500";
         }
     } else {
-        cardTotal.className = "glass-panel rounded-xl p-5 flex items-center justify-between border-b-4 border-brand-green1 transition-colors duration-500 relative overflow-hidden";
-        labelTotal.className = "text-sm text-gray-600 font-semibold uppercase";
-        statTotalEl.className = "text-3xl font-black text-gray-900 drop-shadow-sm";
+        // Default
+        cardTotal.className = "glass-panel rounded-2xl p-5 flex flex-col justify-between border-b-4 border-brand-green1 transition-colors duration-500 shadow-sm min-h-[148px]";
+        labelTotal.className = "text-[11px] font-extrabold text-gray-700 uppercase tracking-wider";
+        statTotalEl.className = "text-3xl font-black text-gray-900 tracking-tight leading-none";
+        if (badgeTotal) badgeTotal.className = "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white/90 border border-gray-200 mb-1.5 shadow-2xs";
+        if (dotTotal) dotTotal.className = "w-1.5 h-1.5 rounded-full bg-brand-green1 animate-pulse";
+        if (iconBoxTotal) iconBoxTotal.className = "w-12 h-12 bg-gradient-to-br from-brand-green1 to-brand-green2 rounded-xl flex items-center justify-center text-white flex-shrink-0 shadow-md transition-colors duration-500";
     }
 
-    // 1. Hitung persentase murni dari Total Input dibagi DPT Awal
+    // === UPDATE PROGRESS BAR GLOBAL (BERDASARKAN DPT AWAL) ===
     const percentage = appData.dptTotal > 0 ? ((total / appData.dptTotal) * 100).toFixed(1) : 0;
-    
     document.getElementById('progress-text').innerText = `${percentage}%`;
     document.getElementById('progress-bar').style.width = `${Math.min(percentage, 100)}%`;
-    
-    // 2. Tampilkan Total DPT Awal pada teks Total DPT
     document.getElementById('text-dpt').innerText = (appData.dptTotal || 0).toLocaleString('id-ID');
 
-    // Update Target DPT Laki-laki & Perempuan
+    // === UPDATE PROGRESS BAR LAKI-LAKI & PEREMPUAN ===
     const elTargetLk = document.getElementById('text-target-lk');
     const elTargetPr = document.getElementById('text-target-pr');
     const elPctLk = document.getElementById('percent-target-lk');
@@ -832,7 +814,7 @@ window.updateDashboard = function() {
     if (pBarLk) pBarLk.style.width = `${Math.min(pctMale, 100)}%`;
     if (pBarPr) pBarPr.style.width = `${Math.min(pctFemale, 100)}%`;
 
-    // Update Chart Alamat
+    // === UPDATE CHART STATISTIK PER DUSUN ===
     const dusunLabels = ['Dusun 1', 'Dusun 2', 'Dusun 3', 'Dusun 4', 'Dusun 5', 'Dusun 6', 'Dusun 7', 'Dusun 8'];
     const addressCounts = new Array(8).fill(0);
     
@@ -847,24 +829,84 @@ window.updateDashboard = function() {
             addressChartInstance.data.datasets[0].data = addressCounts;
             addressChartInstance.update();
         } else {
-            addressChartInstance = new Chart(ctxAddress.getContext('2d'), {
+            const ctx = ctxAddress.getContext('2d');
+            
+            // Buat efek gradasi vertikal untuk batang grafik
+            const barGradient = ctx.createLinearGradient(0, 0, 0, 280);
+            barGradient.addColorStop(0, '#2F6B3F');   // Hijau terang di atas
+            barGradient.addColorStop(1, '#0B3D2E');   // Hijau gelap di bawah
+
+            const hoverGradient = ctx.createLinearGradient(0, 0, 0, 280);
+            hoverGradient.addColorStop(0, '#F2C94C'); // Aksen emas saat disentuh kursor
+            hoverGradient.addColorStop(1, '#2F6B3F');
+
+            addressChartInstance = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: dusunLabels,
                     datasets: [{
                         label: 'Jumlah Pemilih',
                         data: addressCounts,
-                        backgroundColor: '#2F6B3F',
+                        backgroundColor: barGradient,
+                        hoverBackgroundColor: hoverGradient,
                         borderColor: '#0B3D2E',
-                        borderWidth: 1,
-                        borderRadius: 4
+                        borderWidth: 0,
+                        borderRadius: { topLeft: 8, topRight: 8, bottomLeft: 0, bottomRight: 0 },
+                        borderSkipped: false,
+                        barPercentage: 0.6,      // Membuat lebar batang lebih proporsional (tidak terlalu gemuk)
+                        categoryPercentage: 0.8
                     }]
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false, 
+                    plugins: { 
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0B3D2E',
+                            titleFont: { family: 'Inter', size: 13, weight: 'bold' },
+                            bodyFont: { family: 'Inter', size: 13 },
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toLocaleString('id-ID') + ' Suara Pemilih';
+                                }
+                            }
+                        }
+                    }, 
+                    scales: { 
+                        x: {
+                            grid: {
+                                display: false // Hilangkan garis vertikal agar grafik bersih
+                            },
+                            ticks: {
+                                font: { family: 'Inter', size: 12, weight: '600' },
+                                color: '#374151'
+                            }
+                        },
+                        y: { 
+                            beginAtZero: true, 
+                            border: { display: false },
+                            grid: {
+                                color: '#E5E7EB',
+                                tickBorderDash: [4, 4] // Garis bantu horizontal lembut
+                            },
+                            ticks: { 
+                                maxTicksLimit: 6, // Mencegah angka sumbu Y menumpuk rapat
+                                precision: 0,
+                                font: { family: 'Inter', size: 11, weight: '500' },
+                                color: '#6B7280',
+                                padding: 8
+                            } 
+                        } 
+                    } 
+                }
             });
         }
     }
-};
+}
 
 window.renderTable = function() {
     const tableBody = document.getElementById('voter-table-body');
