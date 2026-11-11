@@ -27,6 +27,19 @@ const voterForm = document.getElementById('voter-form');
 // View Elements
 const loginView = document.getElementById('login-view');
 const mainView = document.getElementById('main-view');
+// --- Inisialisasi Kalender Flatpickr ---
+const fpConfig = {
+    altInput: true,
+    altFormat: "d/m/Y",  // Tampilan visual untuk user (dd/mm/yyyy)
+    dateFormat: "Y-m-d", // Nilai asli yang dikirim ke fungsi renderTable (yyyy-mm-dd) agar logika JS tidak error
+    locale: "id",        // Bahasa Indonesia
+    onChange: function() {
+        if (window.renderTable) window.renderTable();
+    }
+};
+
+flatpickr("#filter-waktu-mulai", fpConfig);
+flatpickr("#filter-waktu-akhir", fpConfig);
 
 // --- Logika Login/Autentikasi ---
 document.getElementById('login-form').addEventListener('submit', function(e) {
@@ -196,6 +209,26 @@ onValue(dbRef, (snapshot) => {
             id: key,
             ...usersObj[key]
         }));
+
+        // TAMBAHKAN KODE INI UNTUK UPDATE OPSI FILTER RELAWAN
+        const filterRelawan = document.getElementById('filter-relawan');
+        if (filterRelawan) {
+            const currentVal = filterRelawan.value;
+            const uniqueRelawan = [...new Set(appData.voters.map(v => v.inputBy))].filter(Boolean);
+            
+            filterRelawan.innerHTML = '<option value="semua">Semua Relawan</option>';
+            uniqueRelawan.forEach(relawan => {
+                const opt = document.createElement('option');
+                opt.value = relawan;
+                opt.textContent = relawan;
+                filterRelawan.appendChild(opt);
+            });
+            // Pertahankan pilihan pengguna sebelumnya saat UI dirender ulang
+            if (uniqueRelawan.includes(currentVal)) {
+                filterRelawan.value = currentVal;
+            }
+        }
+
     } else {
         appData = { dptTotal: 0, bgImage: '', fotoCalon: '', voters: [], users: [] };
     }
@@ -571,7 +604,8 @@ window.exportData = function() {
             "Nama Lengkap": voter.name.toUpperCase(),
             "Alamat": voter.address,
             "Jenis Kelamin": voter.gender,
-            "Waktu Input": waktuFormat
+            "Waktu Input": waktuFormat,
+            "Penginput": voter.inputBy || 'Sistem' // Tambahan untuk Excel
         };
     });
     const worksheet = XLSX.utils.json_to_sheet(dataUntukExcel);
@@ -916,19 +950,50 @@ window.renderTable = function() {
     const elNama = document.getElementById('filter-nama');
     const elAlamat = document.getElementById('filter-alamat');
     const elJk = document.getElementById('filter-jk');
+    // Ambil elemen filter baru
+    const elRelawan = document.getElementById('filter-relawan');
+    const elWaktuMulai = document.getElementById('filter-waktu-mulai');
+    const elWaktuAkhir = document.getElementById('filter-waktu-akhir');
     
     const valNama = elNama ? elNama.value.trim().toLowerCase() : '';
     const valAlamat = elAlamat ? elAlamat.value : 'semua';
     const valJk = elJk ? elJk.value : 'semua';
+    // Ambil value baru
+    const valRelawan = elRelawan ? elRelawan.value : 'semua';
+    const valMulai = elWaktuMulai ? elWaktuMulai.value : '';
+    const valAkhir = elWaktuAkhir ? elWaktuAkhir.value : '';
 
     const filteredVoters = appData.voters.filter(voter => {
         const matchNama = valNama === '' || voter.name.toLowerCase().includes(valNama);
         const matchAlamat = (valAlamat === 'semua') || (voter.address === valAlamat);
         const matchJk = (valJk === 'semua') || (voter.gender === valJk);
-        return matchNama && matchAlamat && matchJk;
+        
+        // Cek kecocokan relawan
+        const matchRelawan = (valRelawan === 'semua') || (voter.inputBy === valRelawan);
+        
+        // Cek kecocokan rentang waktu
+        let matchWaktu = true;
+        if (valMulai || valAkhir) {
+            const voterDate = new Date(voter.timestamp);
+            
+            if (valMulai) {
+                const startDate = new Date(valMulai);
+                startDate.setHours(0, 0, 0, 0); // Limit jam 00:00 hari tersebut
+                if (voterDate < startDate) matchWaktu = false;
+            }
+            
+            if (valAkhir && matchWaktu) {
+                const endDate = new Date(valAkhir);
+                endDate.setHours(23, 59, 59, 999); // Limit jam batas akhir hari
+                if (voterDate > endDate) matchWaktu = false;
+            }
+        }
+
+        // Return gabungan semua kondisi filter
+        return matchNama && matchAlamat && matchJk && matchRelawan && matchWaktu;
     });
     
-    // UPDATE ANGKA PADA KOTAK "JUMLAH" SESUAI HASIL FILTER
+    // (Sisa kode update indikator jumlah dan perulangan innerHTML dibiarkan sama...)
     const countEl = document.getElementById('filtered-count');
     if (countEl) countEl.innerText = filteredVoters.length.toLocaleString('id-ID');
     
@@ -970,6 +1035,12 @@ window.renderTable = function() {
             <td class="p-3"><span class="bg-gray-100 px-2 py-1 rounded text-xs border">${voter.address}</span></td>
             <td class="p-3">${voter.gender === 'Laki-laki' ? '<span class="text-blue-600"><i class="fa-solid fa-mars mr-1"></i> Laki-laki</span>' : '<span class="text-pink-600"><i class="fa-solid fa-venus mr-1"></i> Perempuan</span>'}</td>
             <td class="p-3 text-center text-xs text-gray-500">${dateStr} ${timeStr}</td>
+            
+            <!-- TAMBAHAN SEL DATA PENGINPUT (Menampilkan ikon user dan nama) -->
+            <td class="p-3 text-sm font-medium text-brand-green2">
+                <i class="fa-regular fa-user mr-1 text-gray-400"></i> ${voter.inputBy || 'Sistem'}
+            </td>
+            
             ${actionColumnHTML}
         `;
         tableBody.appendChild(tr);
